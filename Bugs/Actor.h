@@ -13,7 +13,7 @@ class Actor : public GraphObject {
     
 public:
     // Constructor / Destructor
-    Actor(int imageID, int startX, int startY, Direction dir = none) : GraphObject(imageID, startX, startY, dir) {}
+    Actor(int imageID, int startX, int startY, Direction dir = right) : GraphObject(imageID, startX, startY, dir) {}
     virtual ~Actor() {} // TODO
     
     // Mutators
@@ -30,17 +30,24 @@ class HPActor : public Actor {
     
 public:
     // Constructor / Destructor
-    HPActor(int startingHP, int imageID, int startX, int startY, Direction dir = none) : Actor(imageID, startX, startY, dir) { m_hitpoints = startingHP; }
+    HPActor(int startingHP, int imageID, int startX, int startY, Direction dir = right);
     virtual ~HPActor() {} // TODO
+    
+    // Helper Functions
+    int correctArtwork(int colonyNumber, HPActor* p) const;
     
     // Accessors
     int hitpoints() const { return m_hitpoints; }
+    bool isDead() const { return m_dead; }
     
     // Mutators
+    void setHitpoints(int n) { m_hitpoints += n; }
+    void setDead() { m_dead = true; }
     virtual void doSomething() = 0;
     
 private:
     int m_hitpoints;
+    bool m_dead;
     
 };
 
@@ -70,8 +77,8 @@ public:
     virtual ~Food(); // TODO
     
     // Mutators
-    virtual void doSomething(); // TODO;
-    //
+    virtual void doSomething() {}
+    
 };
 
 // TODO: Pheromone
@@ -132,7 +139,7 @@ class Ant : public MobileHPActor {
     
 public:
     // Constructor / Destructor
-    Ant(int startX, int startY); // TODO
+    Ant(int colonyNumber, int startX, int startY);
     virtual ~Ant(); // TODO
     
     // Mutators
@@ -154,11 +161,14 @@ class Grasshopper : public MobileHPActor {
     
 public:
     // Constructor / Destructor
-    Grasshopper(int startingHP, int imageID, int startX, int startY) : MobileHPActor(startingHP, imageID, startX, startY) {}
+    Grasshopper(int startingHP, int imageID, int startX, int startY);
     virtual ~Grasshopper() {} // TODO
     
     // Mutators
     virtual void doSomething() = 0;
+    
+private:
+    int stepsToMove;
     
 };
 
@@ -166,7 +176,7 @@ class BabyGrasshopper : public Grasshopper {
     
 public:
     // Constructor / Destructor
-    BabyGrasshopper(int startX, int startY); // TODO
+    BabyGrasshopper(int startX, int startY);
     virtual ~BabyGrasshopper() {} // TODO
     
     // Mutators
@@ -178,7 +188,7 @@ class AdultGrasshopper : public Grasshopper {
     
 public:
     // Constructor / Destructor
-    AdultGrasshopper(int startX, int startY); // TODO
+    AdultGrasshopper(int startX, int startY);
     virtual ~AdultGrasshopper() {} // TODO
     
     // Mutators
@@ -216,13 +226,29 @@ public:
     
 };
 
-// TODO: Pool of Water
+////////////////////////////////////////////
+// Active No HP Actor Declaration
+////////////////////////////////////////////
 
-class WaterPool : public NoHPActor {
+class ActiveNoHPActor : public NoHPActor {
     
 public:
     // Constructor / Destructor
-    WaterPool(int posX, int posY) : NoHPActor(IID_WATER_POOL, posX, posY) {}
+    ActiveNoHPActor(int imageID, int posX, int posY) : NoHPActor(imageID, posX, posY) {}
+    virtual ~ActiveNoHPActor(); // TODO
+    
+    // Mutators
+    virtual void doSomething() = 0;
+    
+};
+
+// TODO: Pool of Water
+
+class WaterPool : public ActiveNoHPActor {
+    
+public:
+    // Constructor / Destructor
+    WaterPool(int posX, int posY) : ActiveNoHPActor(IID_WATER_POOL, posX, posY) {}
     virtual ~WaterPool(); // TODO
     
     // Mutators
@@ -232,11 +258,11 @@ public:
 
 // TODO: Poison
 
-class Poison : public NoHPActor {
+class Poison : public ActiveNoHPActor {
     
 public:
     // Constructor / Destructor
-    Poison(int posX, int posY) : NoHPActor(IID_POISON, posX, posY) {}
+    Poison(int posX, int posY) : ActiveNoHPActor(IID_POISON, posX, posY) {}
     virtual ~Poison(); // TODO
     
     // Mutators
