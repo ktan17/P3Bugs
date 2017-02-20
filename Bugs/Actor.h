@@ -37,7 +37,7 @@ class HPActor : public Actor {
     
 public:
     // Constructor / Destructor
-    HPActor(int startingHP, int imageID, int startX, int startY, Direction dir = right, int depth = 1);
+    HPActor(int startingHP, int imageID, int startX, int startY, StudentWorld *p, Direction dir = right, int depth = 1);
     virtual ~HPActor() {} // TODO
     
     // Helper Functions
@@ -46,15 +46,18 @@ public:
     // Accessors
     virtual int hitpoints() const { return m_hitpoints; }
     virtual bool isDead() const { return m_dead; }
+    StudentWorld* getPointerToWorld() const { return pToWorld; }
     
     // Mutators
     virtual void setHitpoints(int n) { m_hitpoints += n; }
-    virtual void setDead() { m_dead = true; }
+    virtual void setDead();
     virtual void doSomething() = 0;
     
 private:
     int m_hitpoints;
     bool m_dead;
+    
+    StudentWorld *pToWorld;
     
 };
 
@@ -68,7 +71,7 @@ class Food : public HPActor {
     
 public:
     // Constructor / Destructor
-    Food(int posX, int posY, int startingHP = 6000);
+    Food(int posX, int posY, StudentWorld *p, int startingHP = 6000);
     virtual ~Food() {} // TODO
     
     // Mutators
@@ -82,7 +85,7 @@ class Pheromone : public HPActor {
     
 public:
     // Constructor / Destructor
-    Pheromone(int antColony, int posX, int posY); // TODO
+    Pheromone(int antColony, int posX, int posY, StudentWorld *p); // TODO
     virtual ~Pheromone() {} // TODO
     
     // Mutators
@@ -96,7 +99,7 @@ class Anthill : public HPActor {
     
 public:
     // Constructor / Destructor
-    Anthill(int antColony, int posX, int posY); // TODO
+    Anthill(int antColony, int posX, int posY, StudentWorld *p); // TODO
     virtual ~Anthill() {}
     
     // Mutators
@@ -115,7 +118,7 @@ class MobileHPActor : public HPActor {
     
 public:
     // Constructor / Destructor
-    MobileHPActor(int startingHP, int imageID, int startX, int startY, int depth);
+    MobileHPActor(int startingHP, int imageID, int startX, int startY, StudentWorld *p, int depth);
     virtual ~MobileHPActor() {} // TODO
     
     // Helper Functions
@@ -123,17 +126,16 @@ public:
     
     // Accessors
     int ticksToSleep() const { return m_ticksToSleep; }
-    StudentWorld* getPointerToWorld() const { return pToWorld; }
     
     // Mutators
     //virtual void attemptToMove(int destX, int destY);
     void adjustTicksToSleep(int n);
+    virtual void setDead();
     virtual void doSomething();
     virtual void specializedDoSomething() = 0;
     
 private:
     int m_ticksToSleep;
-    StudentWorld *pToWorld;
     
 };
 
@@ -145,7 +147,7 @@ class Ant : public MobileHPActor {
     
 public:
     // Constructor / Destructor
-    Ant(int colonyNumber, int startX, int startY);
+    Ant(int colonyNumber, int startX, int startY, StudentWorld *p);
     virtual ~Ant() {} // TODO
     
     // Mutators
@@ -167,7 +169,7 @@ class Grasshopper : public MobileHPActor {
     
 public:
     // Constructor / Destructor
-    Grasshopper(int startingHP, int imageID, int startX, int startY);
+    Grasshopper(int startingHP, int imageID, int startX, int startY, StudentWorld *p);
     virtual ~Grasshopper() {} // TODO
     
     // Mutators
@@ -183,11 +185,11 @@ class BabyGrasshopper : public Grasshopper {
     
 public:
     // Constructor / Destructor
-    BabyGrasshopper(int startX, int startY);
+    BabyGrasshopper(int startX, int startY, StudentWorld *p);
     virtual ~BabyGrasshopper() {} // TODO
     
     // Mutators
-    virtual void grasshopperDoSomething() {} // TODO
+    virtual void grasshopperDoSomething(); // TODO
     
 };
 
@@ -195,7 +197,7 @@ class AdultGrasshopper : public Grasshopper {
     
 public:
     // Constructor / Destructor
-    AdultGrasshopper(int startX, int startY);
+    AdultGrasshopper(int startX, int startY, StudentWorld *p);
     virtual ~AdultGrasshopper() {} // TODO
     
     // Mutators

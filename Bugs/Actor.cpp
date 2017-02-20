@@ -7,11 +7,12 @@
 // HP Actor Implementation
 ///////////////////////////////////////////////////////////////////////////
 
-HPActor::HPActor(int startingHP, int imageID, int startX, int startY, Direction dir, int depth) :
+HPActor::HPActor(int startingHP, int imageID, int startX, int startY, StudentWorld *p, Direction dir, int depth) :
 Actor(imageID, startX, startY, dir, depth) {
     
     m_hitpoints = startingHP;
     m_dead = false;
+    pToWorld = p;
 
 }
 
@@ -59,12 +60,19 @@ int HPActor::correctArtwork(int colonyNumber, HPActor *p) const {
     
 }
 
+void HPActor::setDead() {
+    
+    m_dead = true;
+    pToWorld->recordDeadActorPosition(getX(), getY());
+    
+}
+
 ///////////////////////////////////////////////////////////////////////////
 // Food Implementation
 ///////////////////////////////////////////////////////////////////////////
 
-Food::Food(int posX, int posY, int startingHP) :
-HPActor(startingHP, IID_FOOD , posX, posY, right, 2) {
+Food::Food(int posX, int posY, StudentWorld *p, int startingHP) :
+HPActor(startingHP, IID_FOOD , posX, posY, p, right, 2) {
     
 }
 
@@ -72,8 +80,8 @@ HPActor(startingHP, IID_FOOD , posX, posY, right, 2) {
 // Pheromone Implementation
 ///////////////////////////////////////////////////////////////////////////
 
-Pheromone::Pheromone(int antColony, int posX, int posY) :
-HPActor(256, correctArtwork(antColony, this), posX, posY, right, 2) {
+Pheromone::Pheromone(int antColony, int posX, int posY, StudentWorld *p) :
+HPActor(256, correctArtwork(antColony, this), posX, posY, p, right, 2) {
     
 }
 
@@ -81,8 +89,8 @@ HPActor(256, correctArtwork(antColony, this), posX, posY, right, 2) {
 // Anthill Implementation
 ///////////////////////////////////////////////////////////////////////////
 
-Anthill::Anthill(int antColony, int posX, int posY) :
-HPActor(8999, IID_ANT_HILL, posX, posY, right, 2) {
+Anthill::Anthill(int antColony, int posX, int posY, StudentWorld *p) :
+HPActor(8999, IID_ANT_HILL, posX, posY, p, right, 2) {
     
     m_colonyNumber = antColony;
     
@@ -92,8 +100,8 @@ HPActor(8999, IID_ANT_HILL, posX, posY, right, 2) {
 // Mobile HP Actor Implementation
 ///////////////////////////////////////////////////////////////////////////
 
-MobileHPActor::MobileHPActor(int startingHP, int imageID, int startX, int startY, int depth) :
-HPActor(startingHP, imageID, startX, startY, generateRandomDirection(), depth) {
+MobileHPActor::MobileHPActor(int startingHP, int imageID, int startX, int startY, StudentWorld *p, int depth) :
+HPActor(startingHP, imageID, startX, startY, p, generateRandomDirection(), depth) {
 
     m_ticksToSleep = 0;
     
@@ -119,15 +127,26 @@ GraphObject::Direction MobileHPActor::generateRandomDirection() {
     
 }
 
+void MobileHPActor::adjustTicksToSleep(int n) {
+    
+    m_ticksToSleep += n;
+    
+}
+
+void MobileHPActor::setDead() {
+    
+    HPActor::setDead();
+    getPointerToWorld()->createFoodOn(getX(), getY());
+    
+}
+
 void MobileHPActor::doSomething() {
     
     setHitpoints(-1);
     
     if (hitpoints() == 0) {
         
-        pToWorld->createFoodOn(getX(), getY());
-        setDead();
-        pToWorld->recordDeadActorPosition(getX(), getY());
+        MobileHPActor::setDead();
         return;
         
     }
@@ -143,18 +162,12 @@ void MobileHPActor::doSomething() {
     
 }
 
-void MobileHPActor::adjustTicksToSleep(int n) {
-    
-    m_ticksToSleep += n;
-    
-}
-
 ///////////////////////////////////////////////////////////////////////////
 // Ant Implementation
 ///////////////////////////////////////////////////////////////////////////
 
-Ant::Ant(int colonyNumber, int startX, int startY) :
-MobileHPActor(1500, correctArtwork(colonyNumber, this), startX, startY, 1){
+Ant::Ant(int colonyNumber, int startX, int startY, StudentWorld *p) :
+MobileHPActor(1500, correctArtwork(colonyNumber, this), startX, startY, p, 1){
     
     m_colonyNumber = colonyNumber;
     m_heldFood = 0;
@@ -167,8 +180,8 @@ MobileHPActor(1500, correctArtwork(colonyNumber, this), startX, startY, 1){
 // Grasshopper Implementation
 ///////////////////////////////////////////////////////////////////////////
 
-Grasshopper::Grasshopper(int startingHP, int imageID, int startX, int startY) :
-MobileHPActor(startingHP, imageID, startX, startY, 1) {
+Grasshopper::Grasshopper(int startingHP, int imageID, int startX, int startY, StudentWorld *p) :
+MobileHPActor(startingHP, imageID, startX, startY, p, 1) {
 
     m_stepsToMove = randInt(2, 10);
 
@@ -229,10 +242,17 @@ void Grasshopper::specializedDoSomething() {
             
     }
     
-    bool didMove = getPointerToWorld()->attemptToMove(this, getX(), getY(), destX, destY);
-    
-    if (didMove)
+    if (getPointerToWorld()->attemptToMove(this, getX(), getY(), destX, destY)) {
+        
         moveTo(destX, destY);
+        m_stepsToMove--;
+        
+    }
+    
+    else
+        m_stepsToMove = 0;
+    
+    adjustTicksToSleep(2);
     
 }
 
@@ -240,9 +260,22 @@ void Grasshopper::specializedDoSomething() {
 // Baby Grasshopper Implementation
 ///////////////////////////////////////////////////////////////////////////
 
-BabyGrasshopper::BabyGrasshopper(int startX, int startY) :
-Grasshopper(500, IID_BABY_GRASSHOPPER, startX, startY) {
+BabyGrasshopper::BabyGrasshopper(int startX, int startY, StudentWorld *p) :
+Grasshopper(500, IID_BABY_GRASSHOPPER, startX, startY, p) {
     
+    
+    
+}
+
+void BabyGrasshopper::grasshopperDoSomething() {
+    
+    if (hitpoints() >= 1600) {
+        
+        getPointerToWorld()->growUpGrasshopper(getX(), getY());
+        setDead();
+        return;
+        
+    }
     
 }
 
@@ -250,8 +283,8 @@ Grasshopper(500, IID_BABY_GRASSHOPPER, startX, startY) {
 // Adult Grasshopper Implementation
 ///////////////////////////////////////////////////////////////////////////
 
-AdultGrasshopper::AdultGrasshopper(int startX, int startY) :
-Grasshopper(1600, IID_ADULT_GRASSHOPPER, startX, startY) {
+AdultGrasshopper::AdultGrasshopper(int startX, int startY, StudentWorld *p) :
+Grasshopper(1600, IID_ADULT_GRASSHOPPER, startX, startY, p) {
     
     
 }
