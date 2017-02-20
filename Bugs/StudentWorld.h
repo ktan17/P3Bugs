@@ -15,6 +15,7 @@
 class StudentWorld : public GameWorld
 {
 public:
+    // Constructor / Destructor
     StudentWorld(std::string assetDir)
     : GameWorld(assetDir)
     {
@@ -25,14 +26,9 @@ public:
     
     ~StudentWorld() {
         
-        std::map<Coordinate, std::vector<Actor *>>::iterator it;
-        
-        for (it = mapOfActors.begin(); it != mapOfActors.end(); it++)
-            for (int i = 0; i < (*it).second.size(); i++)
-                delete (*it).second[i];
-        
     }
     
+    // Required functions
     virtual int init()
     {
         
@@ -103,7 +99,21 @@ public:
     
     virtual void cleanUp()
     {
+        std::map<Coordinate, std::vector<Actor *>>::iterator it;
+        
+        for (it = mapOfActors.begin(); it != mapOfActors.end(); it++)
+            for (int i = 0; i < (*it).second.size(); i++)
+                delete (*it).second[i];
     }
+    
+    // Accessors
+    bool isFoodOn(int X, int Y);
+    
+    // Mutators
+    void recordDeadActorPosition(int X, int Y);
+    bool attemptToMove(Actor *caller, int startX, int startY, int destX, int destY);
+    void createFoodOn(int X, int Y);
+    int attemptToEat(int X, int Y, int amount);
     
 private:
     
@@ -142,8 +152,9 @@ private:
     
     std::set<Coordinate> emptyCoordinates;
     std::map<Coordinate, std::vector<Actor *>> mapOfActors;
+    std::vector<Coordinate> actorsToBeRemoved;
     
-    Coordinate makeCoordinate(int X, int Y) {
+    Coordinate makeCoordinate(int X, int Y) const {
         
         Coordinate a(X, Y);
         return a;

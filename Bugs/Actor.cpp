@@ -7,8 +7,8 @@
 // HP Actor Implementation
 ///////////////////////////////////////////////////////////////////////////
 
-HPActor::HPActor(int startingHP, int imageID, int startX, int startY, Direction dir) :
-Actor(imageID, startX, startY, dir) {
+HPActor::HPActor(int startingHP, int imageID, int startX, int startY, Direction dir, int depth) :
+Actor(imageID, startX, startY, dir, depth) {
     
     m_hitpoints = startingHP;
     m_dead = false;
@@ -60,11 +60,40 @@ int HPActor::correctArtwork(int colonyNumber, HPActor *p) const {
 }
 
 ///////////////////////////////////////////////////////////////////////////
+// Food Implementation
+///////////////////////////////////////////////////////////////////////////
+
+Food::Food(int posX, int posY, int startingHP) :
+HPActor(startingHP, IID_FOOD , posX, posY, right, 2) {
+    
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Pheromone Implementation
+///////////////////////////////////////////////////////////////////////////
+
+Pheromone::Pheromone(int antColony, int posX, int posY) :
+HPActor(256, correctArtwork(antColony, this), posX, posY, right, 2) {
+    
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Anthill Implementation
+///////////////////////////////////////////////////////////////////////////
+
+Anthill::Anthill(int antColony, int posX, int posY) :
+HPActor(8999, IID_ANT_HILL, posX, posY, right, 2) {
+    
+    m_colonyNumber = antColony;
+    
+}
+
+///////////////////////////////////////////////////////////////////////////
 // Mobile HP Actor Implementation
 ///////////////////////////////////////////////////////////////////////////
 
-MobileHPActor::MobileHPActor(int startingHP, int imageID, int startX, int startY) :
-HPActor(startingHP, imageID, startX, startY, generateRandomDirection()) {
+MobileHPActor::MobileHPActor(int startingHP, int imageID, int startX, int startY, int depth) :
+HPActor(startingHP, imageID, startX, startY, generateRandomDirection(), depth) {
 
     m_ticksToSleep = 0;
     
@@ -90,12 +119,42 @@ GraphObject::Direction MobileHPActor::generateRandomDirection() {
     
 }
 
+void MobileHPActor::doSomething() {
+    
+    setHitpoints(-1);
+    
+    if (hitpoints() == 0) {
+        
+        pToWorld->createFoodOn(getX(), getY());
+        setDead();
+        pToWorld->recordDeadActorPosition(getX(), getY());
+        return;
+        
+    }
+    
+    if (m_ticksToSleep > 0) {
+        
+        m_ticksToSleep--;
+        return;
+        
+    }
+    
+    specializedDoSomething();
+    
+}
+
+void MobileHPActor::adjustTicksToSleep(int n) {
+    
+    m_ticksToSleep += n;
+    
+}
+
 ///////////////////////////////////////////////////////////////////////////
 // Ant Implementation
 ///////////////////////////////////////////////////////////////////////////
 
 Ant::Ant(int colonyNumber, int startX, int startY) :
-MobileHPActor(1500, correctArtwork(colonyNumber, this), startX, startY){
+MobileHPActor(1500, correctArtwork(colonyNumber, this), startX, startY, 1){
     
     m_colonyNumber = colonyNumber;
     m_heldFood = 0;
@@ -109,10 +168,72 @@ MobileHPActor(1500, correctArtwork(colonyNumber, this), startX, startY){
 ///////////////////////////////////////////////////////////////////////////
 
 Grasshopper::Grasshopper(int startingHP, int imageID, int startX, int startY) :
-MobileHPActor(startingHP, imageID, startX, startY) {
+MobileHPActor(startingHP, imageID, startX, startY, 1) {
 
-    stepsToMove = randInt(2, 10);
+    m_stepsToMove = randInt(2, 10);
 
+}
+
+void Grasshopper::specializedDoSomething() {
+    
+    grasshopperDoSomething();
+    
+    int foodAte = getPointerToWorld()->attemptToEat(getX(), getY(), 200);
+    
+    if (foodAte != -1) {
+        
+        setHitpoints(foodAte);
+        
+        if (randInt(0, 1) == 1) {
+            
+            adjustTicksToSleep(2);
+            return;
+            
+        }
+        
+    }
+        
+    if (m_stepsToMove == 0) {
+        
+        setDirection(generateRandomDirection());
+        m_stepsToMove = randInt(2, 10);
+        
+    }
+    
+    int destX = 0, destY = 0;
+    
+    switch (getDirection()) {
+            
+        case up:
+            destX = getX();
+            destY = getY()+1;
+            break;
+            
+        case right:
+            destX = getX()+1;
+            destY = getY();
+            break;
+            
+        case down:
+            destX = getX();
+            destY = getY()-1;
+            break;
+            
+        case left:
+            destX = getX()-1;
+            destY = getY();
+            break;
+            
+        default:
+            break;
+            
+    }
+    
+    bool didMove = getPointerToWorld()->attemptToMove(this, getX(), getY(), destX, destY);
+    
+    if (didMove)
+        moveTo(destX, destY);
+    
 }
 
 ///////////////////////////////////////////////////////////////////////////
