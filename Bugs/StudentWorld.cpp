@@ -31,6 +31,29 @@ bool StudentWorld::isFoodOn(int X, int Y) {
     
 }
 
+void StudentWorld::setDisplayText() {
+    
+    int ticks = m_tickCount;
+    int antsAnt0, antsAnt1, antsAnt2, antsAnt3; int winningAntNumber;
+    
+    //TODO!
+    /*antsAnt0 = getNumberOfAntsForAnt(0);
+    antsAnt1 = getNumberOfAntsForAnt(1);
+    antsAnt2 = getNumberOfAntsForAnt(2);
+    antsAnt3 = getNumberOfAntsForAnt(3);
+    
+    winningAntNumber = getWinningAntNumber();
+
+    string s = someFunctionToFormatThingsNicely(ticks, antsAnt0,
+                                                antsAnt1, antsAnt2, antsAnt3, winningAntNumber );
+    
+    // Finally, update the display text at the top of the screen with your
+    // newly created stats
+    setGameStatText(s); // calls our provided GameWorld::setGameStatText*/
+    
+    
+}
+
 void StudentWorld::recordDeadActorPosition(int X, int Y) {
     
     actorsToBeRemoved.push_back(makeCoordinate(X, Y));

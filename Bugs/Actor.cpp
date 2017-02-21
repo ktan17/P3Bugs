@@ -8,11 +8,10 @@
 ///////////////////////////////////////////////////////////////////////////
 
 HPActor::HPActor(int startingHP, int imageID, int startX, int startY, StudentWorld *p, Direction dir, int depth) :
-Actor(imageID, startX, startY, dir, depth) {
+Actor(imageID, startX, startY, p, dir, depth) {
     
     m_hitpoints = startingHP;
     m_dead = false;
-    pToWorld = p;
     
 }
 
@@ -63,7 +62,7 @@ int HPActor::correctArtwork(int colonyNumber, HPActor *p) const {
 void HPActor::setDead() {
     
     m_dead = true;
-    pToWorld->recordDeadActorPosition(getX(), getY());
+    getPointerToWorld()->recordDeadActorPosition(getX(), getY());
     
 }
 
@@ -106,6 +105,7 @@ HPActor(startingHP, imageID, startX, startY, p, generateRandomDirection(), depth
     m_ticksToSleep = 0;
     m_startX = startX;
     m_startY = startY;
+    m_stunned = false;
     
 }
 
@@ -269,11 +269,7 @@ void Grasshopper::specializedDoSomething() {
 ///////////////////////////////////////////////////////////////////////////
 
 BabyGrasshopper::BabyGrasshopper(int startX, int startY, StudentWorld *p) :
-Grasshopper(500, IID_BABY_GRASSHOPPER, startX, startY, p) {
-    
-    
-    
-}
+Grasshopper(500, IID_BABY_GRASSHOPPER, startX, startY, p) {}
 
 void BabyGrasshopper::grasshopperDoSomething() {
     

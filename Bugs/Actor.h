@@ -15,18 +15,21 @@ class Actor : public GraphObject {
     
 public:
     // Constructor / Destructor
-    Actor(int imageID, int startX, int startY, Direction dir = right, int depth = 1) : GraphObject(imageID, startX, startY, dir, depth) {}
+    Actor(int imageID, int startX, int startY, StudentWorld *p, Direction dir = right, int depth = 1) : GraphObject(imageID, startX, startY, dir, depth), pToWorld(p) {}
     virtual ~Actor() {} // TODO
     
     // Accessors
     virtual bool isDead() const { return false; }
     virtual int hitpoints() const { return 0; }
+    StudentWorld* getPointerToWorld() const { return pToWorld; }
     
     // Mutators
-    virtual void resetDidSomething() {}
     virtual void setHitpoints(int n) {}
     virtual void setDead() {}
     virtual void doSomething() = 0;
+    
+private:
+    StudentWorld *pToWorld;
     
 };
 
@@ -47,10 +50,8 @@ public:
     // Accessors
     virtual int hitpoints() const { return m_hitpoints; }
     virtual bool isDead() const { return m_dead; }
-    StudentWorld* getPointerToWorld() const { return pToWorld; }
     
     // Mutators
-    virtual void resetDidSomething() {}
     virtual void setHitpoints(int n) { m_hitpoints += n; }
     virtual void setDead();
     virtual void doSomething() = 0;
@@ -58,8 +59,6 @@ public:
 private:
     int m_hitpoints;
     bool m_dead;
-    
-    StudentWorld *pToWorld;
     
 };
 
@@ -130,12 +129,11 @@ public:
     int ticksToSleep() const { return m_ticksToSleep; }
     int getStartX() const { return m_startX; }
     int getStartY() const { return m_startY; }
-    bool hasDoneSomething() const { return m_didSomething; }
+    bool isStunned() const { return m_stunned; }
     
     // Mutators
     //virtual void attemptToMove(int destX, int destY);
     void adjustTicksToSleep(int n);
-    virtual void resetDidSomething() { m_didSomething = false; }
     virtual void setDead();
     virtual void doSomething();
     virtual void specializedDoSomething() = 0;
@@ -144,7 +142,7 @@ private:
     int m_ticksToSleep;
     int m_startX;
     int m_startY;
-    bool m_didSomething;
+    bool m_stunned;
     
 };
 
@@ -224,7 +222,7 @@ class Pebble : public Actor {
     
 public:
     // Constructor / Destructor
-    Pebble(int posX, int posY) : Actor(IID_ROCK, posX, posY, right, 1) {}
+    Pebble(int posX, int posY, StudentWorld *p) : Actor(IID_ROCK, posX, posY, p, right, 1) {}
     virtual ~Pebble() {} // TODO
     
     // Mutators
@@ -240,11 +238,12 @@ class ActiveNoHPActor : public Actor {
     
 public:
     // Constructor / Destructor
-    ActiveNoHPActor(int imageID, int posX, int posY, Direction dir, int depth) : Actor(imageID, posX, posY, dir, depth) {}
+    ActiveNoHPActor(int imageID, int posX, int posY, StudentWorld *p, Direction dir, int depth) : Actor(imageID, posX, posY, p, dir, depth) {}
     virtual ~ActiveNoHPActor() {} // TODO
     
     // Mutators
     virtual void doSomething() = 0;
+    //virtual void specializedDoSomething();
     
 };
 
@@ -254,11 +253,12 @@ class WaterPool : public ActiveNoHPActor {
     
 public:
     // Constructor / Destructor
-    WaterPool(int posX, int posY) : ActiveNoHPActor(IID_WATER_POOL, posX, posY, right, 2) {}
+    WaterPool(int posX, int posY, StudentWorld *p) : ActiveNoHPActor(IID_WATER_POOL, posX, posY, p, right, 2) {}
     virtual ~WaterPool() {} // TODO
     
     // Mutators
     virtual void doSomething() {} // TODO
+    //virtual void specializedDoSomething();
     
 };
 
@@ -268,11 +268,12 @@ class Poison : public ActiveNoHPActor {
     
 public:
     // Constructor / Destructor
-    Poison(int posX, int posY) : ActiveNoHPActor(IID_POISON, posX, posY, right, 2) {}
+    Poison(int posX, int posY, StudentWorld *p) : ActiveNoHPActor(IID_POISON, posX, posY, p, right, 2) {}
     virtual ~Poison() {} // TODO
     
     // Mutators
     virtual void doSomething() {} // TODO
+    //virtual void specializedDoSomething();
     
 };
 

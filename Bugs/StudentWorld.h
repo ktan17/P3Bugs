@@ -53,15 +53,15 @@ public:
                         break;
                         
                     case Field::rock:
-                        mapOfActors.insert({makeCoordinate(i, j), {new Pebble(i, j)}});
+                        mapOfActors.insert({makeCoordinate(i, j), {new Pebble(i, j, this)}});
                         break;
                         
                     case Field::water:
-                        mapOfActors.insert({makeCoordinate(i, j), {new WaterPool(i, j)}});
+                        mapOfActors.insert({makeCoordinate(i, j), {new WaterPool(i, j, this)}});
                         break;
                         
                     case Field::poison:
-                        mapOfActors.insert({makeCoordinate(i, j), {new Poison(i, j)}});
+                        mapOfActors.insert({makeCoordinate(i, j), {new Poison(i, j, this)}});
                         break;
                         
                     case Field::food:
@@ -134,6 +134,7 @@ public:
     bool isFoodOn(int X, int Y);
     
     // Mutators
+    void setDisplayText();
     
     // For HP Actors
     void recordDeadActorPosition(int X, int Y);
