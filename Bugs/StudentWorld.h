@@ -106,11 +106,12 @@ public:
         
         for (it = mapOfActors.begin(); it != mapOfActors.end(); it++) {
             
-            for (int i = 0; i < (*it).second.size(); i++)
+            for (int i = 0; i < (*it).second.size(); i++) 
                 (*it).second[i]->doSomething();
             
         }
         
+        moveActors();
         removeDeadActors();
         
         if (m_tickCount < 2000)
@@ -139,8 +140,9 @@ public:
     void removeDeadActors();
     
     // For Ants and Grasshoppers
-    bool attemptToMove(Actor *caller, int startX, int startY, int destX, int destY);
+    bool attemptToMove(MobileHPActor *caller, int startX, int startY, int destX, int destY);
     int attemptToEat(int X, int Y, int amount);
+    void moveActors();
     void createFoodOn(int X, int Y);
     void growUpGrasshopper(int posX, int posY);
     
@@ -182,6 +184,7 @@ private:
     std::set<Coordinate> emptyCoordinates;
     std::map<Coordinate, std::vector<Actor *>> mapOfActors;
     std::vector<Coordinate> actorsToBeRemoved;
+    std::vector<MobileHPActor *> actorsToBeMoved;
     
     Coordinate makeCoordinate(int X, int Y) const {
         

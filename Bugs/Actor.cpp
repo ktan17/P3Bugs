@@ -13,7 +13,7 @@ Actor(imageID, startX, startY, dir, depth) {
     m_hitpoints = startingHP;
     m_dead = false;
     pToWorld = p;
-
+    
 }
 
 int HPActor::correctArtwork(int colonyNumber, HPActor *p) const {
@@ -102,8 +102,10 @@ HPActor(8999, IID_ANT_HILL, posX, posY, p, right, 2) {
 
 MobileHPActor::MobileHPActor(int startingHP, int imageID, int startX, int startY, StudentWorld *p, int depth) :
 HPActor(startingHP, imageID, startX, startY, p, generateRandomDirection(), depth) {
-
+    
     m_ticksToSleep = 0;
+    m_startX = startX;
+    m_startY = startY;
     
 }
 
@@ -143,6 +145,8 @@ void MobileHPActor::setDead() {
 void MobileHPActor::doSomething() {
     
     setHitpoints(-1);
+    m_startX = getX();
+    m_startY = getY();
     
     if (hitpoints() == 0) {
         
@@ -182,77 +186,81 @@ MobileHPActor(1500, correctArtwork(colonyNumber, this), startX, startY, p, 1){
 
 Grasshopper::Grasshopper(int startingHP, int imageID, int startX, int startY, StudentWorld *p) :
 MobileHPActor(startingHP, imageID, startX, startY, p, 1) {
-
+    
     m_stepsToMove = randInt(2, 10);
-
+    
 }
 
 void Grasshopper::specializedDoSomething() {
     
     grasshopperDoSomething();
     
-    int foodAte = getPointerToWorld()->attemptToEat(getX(), getY(), 200);
-    
-    if (foodAte != -1) {
+    if (!isDead()) {
         
-        setHitpoints(foodAte);
+        int foodAte = getPointerToWorld()->attemptToEat(getX(), getY(), 200);
         
-        if (randInt(0, 1) == 1) {
+        if (foodAte != -1) {
             
-            adjustTicksToSleep(2);
-            return;
+            setHitpoints(foodAte);
+            
+            if (randInt(0, 1) == 1) {
+                
+                adjustTicksToSleep(2);
+                return;
+                
+            }
             
         }
         
+        if (m_stepsToMove == 0) {
+            
+            setDirection(generateRandomDirection());
+            m_stepsToMove = randInt(2, 10);
+            
+        }
+        
+        int destX = 0, destY = 0;
+        
+        switch (getDirection()) {
+                
+            case up:
+                destX = getX();
+                destY = getY()+1;
+                break;
+                
+            case right:
+                destX = getX()+1;
+                destY = getY();
+                break;
+                
+            case down:
+                destX = getX();
+                destY = getY()-1;
+                break;
+                
+            case left:
+                destX = getX()-1;
+                destY = getY();
+                break;
+                
+            default:
+                break;
+                
+        }
+        
+        if (getPointerToWorld()->attemptToMove(this, getX(), getY(), destX, destY)) {
+            
+            moveTo(destX, destY);
+            m_stepsToMove--;
+            
+        }
+        
+        else
+            m_stepsToMove = 0;
+        
+        adjustTicksToSleep(2);
+        
     }
-        
-    if (m_stepsToMove == 0) {
-        
-        setDirection(generateRandomDirection());
-        m_stepsToMove = randInt(2, 10);
-        
-    }
-    
-    int destX = 0, destY = 0;
-    
-    switch (getDirection()) {
-            
-        case up:
-            destX = getX();
-            destY = getY()+1;
-            break;
-            
-        case right:
-            destX = getX()+1;
-            destY = getY();
-            break;
-            
-        case down:
-            destX = getX();
-            destY = getY()-1;
-            break;
-            
-        case left:
-            destX = getX()-1;
-            destY = getY();
-            break;
-            
-        default:
-            break;
-            
-    }
-    
-    if (getPointerToWorld()->attemptToMove(this, getX(), getY(), destX, destY)) {
-        
-        moveTo(destX, destY);
-        m_stepsToMove--;
-        
-    }
-    
-    else
-        m_stepsToMove = 0;
-    
-    adjustTicksToSleep(2);
     
 }
 

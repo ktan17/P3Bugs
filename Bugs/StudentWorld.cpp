@@ -67,7 +67,7 @@ void StudentWorld::removeDeadActors() {
     
 }
 
-bool StudentWorld::attemptToMove(Actor *caller, int startX, int startY, int destX, int destY) {
+bool StudentWorld::attemptToMove(MobileHPActor *caller, int startX, int startY, int destX, int destY) {
     
     Coordinate a(destX, destY);
     
@@ -76,17 +76,7 @@ bool StudentWorld::attemptToMove(Actor *caller, int startX, int startY, int dest
     
     else {
         
-        if (emptyCoordinates.find(a) != emptyCoordinates.end())
-            emptyCoordinates.erase(a);
-        
-        mapOfActors[a].push_back(caller);
-        
-        Coordinate b(startX, startY);
-        mapOfActors[b].erase(remove(mapOfActors[b].begin(), mapOfActors[b].end(), caller));
-        
-        if (mapOfActors[b].empty())
-            emptyCoordinates.insert(b);
-        
+        actorsToBeMoved.push_back(caller);
         return true;
         
     }
@@ -126,6 +116,35 @@ int StudentWorld::attemptToEat(int X, int Y, int amount) {
     }
     
     return -1;
+    
+}
+
+void StudentWorld::moveActors() {
+    
+    if (actorsToBeMoved.empty())
+        return;
+    
+    for (int i = 0; i < actorsToBeMoved.size(); i++) {
+        
+        Coordinate start(actorsToBeMoved[i]->getStartX(), actorsToBeMoved[i]->getStartY());
+        Coordinate dest(actorsToBeMoved[i]->getX(), actorsToBeMoved[i]->getY());
+        
+        if (emptyCoordinates.find(dest) != emptyCoordinates.end())
+            emptyCoordinates.erase(dest);
+        
+        mapOfActors[dest].push_back(actorsToBeMoved[i]);
+        
+        mapOfActors[start].erase(remove(mapOfActors[start].begin(), mapOfActors[start].end(), actorsToBeMoved[i]));
+        
+        if (mapOfActors[start].empty())
+            emptyCoordinates.insert(start);
+    
+    }
+    
+    unsigned long size = actorsToBeMoved.size();
+    
+    for (int i = 0; i < size; i++)
+        actorsToBeMoved.pop_back();
     
 }
 

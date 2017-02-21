@@ -23,6 +23,7 @@ public:
     virtual int hitpoints() const { return 0; }
     
     // Mutators
+    virtual void resetDidSomething() {}
     virtual void setHitpoints(int n) {}
     virtual void setDead() {}
     virtual void doSomething() = 0;
@@ -49,6 +50,7 @@ public:
     StudentWorld* getPointerToWorld() const { return pToWorld; }
     
     // Mutators
+    virtual void resetDidSomething() {}
     virtual void setHitpoints(int n) { m_hitpoints += n; }
     virtual void setDead();
     virtual void doSomething() = 0;
@@ -126,16 +128,23 @@ public:
     
     // Accessors
     int ticksToSleep() const { return m_ticksToSleep; }
+    int getStartX() const { return m_startX; }
+    int getStartY() const { return m_startY; }
+    bool hasDoneSomething() const { return m_didSomething; }
     
     // Mutators
     //virtual void attemptToMove(int destX, int destY);
     void adjustTicksToSleep(int n);
+    virtual void resetDidSomething() { m_didSomething = false; }
     virtual void setDead();
     virtual void doSomething();
     virtual void specializedDoSomething() = 0;
     
 private:
     int m_ticksToSleep;
+    int m_startX;
+    int m_startY;
+    bool m_didSomething;
     
 };
 
