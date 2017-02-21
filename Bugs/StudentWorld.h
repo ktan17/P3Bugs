@@ -145,7 +145,10 @@ public:
     int attemptToEat(int X, int Y, int amount);
     void moveActors();
     void createFoodOn(int X, int Y);
-    void growUpGrasshopper(int posX, int posY);
+    void growUpGrasshopper(int X, int Y);
+    
+    // For Poison and Water Pools
+    void stunActors(ActiveNoHPActor *caller, int X, int Y);
     
 private:
     

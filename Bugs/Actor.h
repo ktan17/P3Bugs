@@ -19,13 +19,9 @@ public:
     virtual ~Actor() {} // TODO
     
     // Accessors
-    virtual bool isDead() const { return false; }
-    virtual int hitpoints() const { return 0; }
     StudentWorld* getPointerToWorld() const { return pToWorld; }
     
     // Mutators
-    virtual void setHitpoints(int n) {}
-    virtual void setDead() {}
     virtual void doSomething() = 0;
     
 private:
@@ -41,24 +37,26 @@ class HPActor : public Actor {
     
 public:
     // Constructor / Destructor
-    HPActor(int startingHP, int imageID, int startX, int startY, StudentWorld *p, Direction dir = right, int depth = 1);
+    HPActor(int startingHP, int imageID, int startX, int startY, StudentWorld *p, bool isMobile, Direction dir = right, int depth = 1);
     virtual ~HPActor() {} // TODO
     
     // Helper Functions
     int correctArtwork(int colonyNumber, HPActor* p) const;
     
     // Accessors
-    virtual int hitpoints() const { return m_hitpoints; }
-    virtual bool isDead() const { return m_dead; }
+    int hitpoints() const { return m_hitpoints; }
+    bool isDead() const { return m_dead; }
+    bool isMobile() const { return m_isMobile; }
     
     // Mutators
-    virtual void setHitpoints(int n) { m_hitpoints += n; }
-    virtual void setDead();
+    void setHitpoints(int n) { m_hitpoints += n; }
+    void setDead();
     virtual void doSomething() = 0;
     
 private:
     int m_hitpoints;
     bool m_dead;
+    bool m_isMobile;
     
 };
 
@@ -134,6 +132,7 @@ public:
     // Mutators
     //virtual void attemptToMove(int destX, int destY);
     void adjustTicksToSleep(int n);
+    void setStunned(bool stunned);
     virtual void setDead();
     virtual void doSomething();
     virtual void specializedDoSomething() = 0;
@@ -238,12 +237,18 @@ class ActiveNoHPActor : public Actor {
     
 public:
     // Constructor / Destructor
-    ActiveNoHPActor(int imageID, int posX, int posY, StudentWorld *p, Direction dir, int depth) : Actor(imageID, posX, posY, p, dir, depth) {}
+    ActiveNoHPActor(int imageID, int posX, int posY, StudentWorld *p, bool isPoison, Direction dir, int depth) : Actor(imageID, posX, posY, p, dir, depth), m_isPoison(isPoison) {}
     virtual ~ActiveNoHPActor() {} // TODO
     
+    // Accessors
+    bool isPoison() const { return m_isPoison; }
+    
     // Mutators
-    virtual void doSomething() = 0;
-    //virtual void specializedDoSomething();
+    virtual void doSomething();
+    virtual void specializedDoSomething() {}
+    
+private:
+    bool m_isPoison;
     
 };
 
@@ -253,7 +258,7 @@ class WaterPool : public ActiveNoHPActor {
     
 public:
     // Constructor / Destructor
-    WaterPool(int posX, int posY, StudentWorld *p) : ActiveNoHPActor(IID_WATER_POOL, posX, posY, p, right, 2) {}
+    WaterPool(int posX, int posY, StudentWorld *p) : ActiveNoHPActor(IID_WATER_POOL, posX, posY, p, false, right, 2) {}
     virtual ~WaterPool() {} // TODO
     
     // Mutators
@@ -268,7 +273,7 @@ class Poison : public ActiveNoHPActor {
     
 public:
     // Constructor / Destructor
-    Poison(int posX, int posY, StudentWorld *p) : ActiveNoHPActor(IID_POISON, posX, posY, p, right, 2) {}
+    Poison(int posX, int posY, StudentWorld *p) : ActiveNoHPActor(IID_POISON, posX, posY, p, true, right, 2) {}
     virtual ~Poison() {} // TODO
     
     // Mutators

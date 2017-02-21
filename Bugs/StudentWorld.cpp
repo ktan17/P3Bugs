@@ -71,7 +71,7 @@ void StudentWorld::removeDeadActors() {
         
         for (int i = 0; i < mapOfActors[a].size(); i++) {
             
-            if (mapOfActors[a][i]->isDead()) {
+            if (static_cast<HPActor *>(mapOfActors[a][i])->isDead()) {
                 
                 delete mapOfActors[a][i];
                 mapOfActors[a].erase(remove(mapOfActors[a].begin(), mapOfActors[a].end(), mapOfActors[a][i]));
@@ -115,20 +115,22 @@ int StudentWorld::attemptToEat(int X, int Y, int amount) {
     
     for (int i = 0; i < mapOfActors[a].size(); i++) {
         
-        if (dynamic_cast<Food *>(mapOfActors[a][i]) != nullptr && !mapOfActors[a][i]->isDead()) {
+        if (dynamic_cast<Food *>(mapOfActors[a][i]) != nullptr && !static_cast<Food *>(mapOfActors[a][i])->isDead()) {
             
-            if (mapOfActors[a][i]->hitpoints() > 200) {
+            Food* foodPointer = static_cast<Food *>(mapOfActors[a][i]);
+            
+            if (foodPointer->hitpoints() > 200) {
                 
-                mapOfActors[a][i]->setHitpoints(-200);
+                foodPointer->setHitpoints(-200);
                 return 200;
                 
             }
             
             else {
                 
-                int foodLeft = mapOfActors[a][i]->hitpoints();
-                mapOfActors[a][i]->setHitpoints(-mapOfActors[a][i]->hitpoints());
-                mapOfActors[a][i]->setDead();
+                int foodLeft = foodPointer->hitpoints();
+                foodPointer->setHitpoints(-foodPointer->hitpoints());
+                foodPointer->setDead();
                 
                 return foodLeft;
                 
@@ -179,7 +181,7 @@ void StudentWorld::createFoodOn(int X, int Y) {
         
         if (dynamic_cast<Food *>(mapOfActors[a][i]) != nullptr) {
             
-            mapOfActors[a][i]->setHitpoints(100);
+            static_cast<Food *>(mapOfActors[a][i])->setHitpoints(100);
             return;
             
         }
@@ -190,9 +192,35 @@ void StudentWorld::createFoodOn(int X, int Y) {
     
 }
 
-void StudentWorld::growUpGrasshopper(int posX, int posY) {
+void StudentWorld::growUpGrasshopper(int X, int Y) {
     
-    Coordinate a(posX, posY);
-    mapOfActors[a].push_back(new AdultGrasshopper(posX, posY, this));
+    Coordinate a(X, Y);
+    mapOfActors[a].push_back(new AdultGrasshopper(X, Y, this));
+    
+}
+
+void StudentWorld::stunActors(ActiveNoHPActor *caller, int X, int Y) {
+    
+    Coordinate a(X, Y);
+    
+    if (mapOfActors[a].size() == 1)
+        return;
+    
+    for (int i = 1; i < mapOfActors[a].size(); i++) {
+        
+        if (!static_cast<HPActor *>(mapOfActors[a][i])->isMobile())
+            continue;
+        
+        if (caller->isPoison())
+            static_cast<MobileHPActor *>(mapOfActors[a][i])->setHitpoints(-150);
+        
+        else {
+            
+            static_cast<MobileHPActor *>(mapOfActors[a][i])->adjustTicksToSleep(2);
+            static_cast<MobileHPActor *>(mapOfActors[a][i])->setStunned(true);
+            
+        }
+        
+    }
     
 }
