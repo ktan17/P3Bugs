@@ -308,7 +308,7 @@ Grasshopper(1600, IID_ADULT_GRASSHOPPER, startX, startY, p) {
 
 void AdultGrasshopper::grasshopperDoSomething() {
     
-    if (randInt(1, 3) == 1 && getPointerToWorld()->
+    //if (randInt(1, 3) == 1 && getPointerToWorld()->
     
 }
 
