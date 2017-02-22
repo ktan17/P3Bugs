@@ -106,6 +106,12 @@ bool StudentWorld::attemptToMove(MobileHPActor *caller, int startX, int startY, 
     
 }
 
+bool StudentWorld::attemptToBite(MobileHPActor *caller, int X, int Y, int damage) {
+    
+    return false;
+    
+}
+
 int StudentWorld::attemptToEat(int X, int Y, int amount) {
     // Called by an Actor. Function only modifies the Food Actor if found at position X, Y and returns
     // the amount of food eaten. Else, if no Food Actor found at X, Y, nothing is modified and function
@@ -211,13 +217,28 @@ void StudentWorld::stunActors(ActiveNoHPActor *caller, int X, int Y) {
         if (!static_cast<HPActor *>(mapOfActors[a][i])->isMobile())
             continue;
         
-        if (caller->isPoison())
-            static_cast<MobileHPActor *>(mapOfActors[a][i])->setHitpoints(-150);
+        MobileHPActor *mHPActorPointer = static_cast<MobileHPActor *>(mapOfActors[a][i]);
+        
+        if (caller->isPoison()) {
+            
+            if (dynamic_cast<AdultGrasshopper *>(mHPActorPointer) != nullptr)
+                continue;
+            
+            mHPActorPointer->setHitpoints(-150);
+            
+            if (mHPActorPointer->hitpoints() <= 0)
+                mHPActorPointer->setDead();
+            
+        }
         
         else {
             
-            static_cast<MobileHPActor *>(mapOfActors[a][i])->adjustTicksToSleep(2);
-            static_cast<MobileHPActor *>(mapOfActors[a][i])->setStunned(true);
+            if (!mHPActorPointer->isStunned()) {
+                
+                mHPActorPointer->adjustTicksToSleep(2);
+                mHPActorPointer->setStunned(true);
+                
+            }
             
         }
         

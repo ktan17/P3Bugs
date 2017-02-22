@@ -151,26 +151,30 @@ void MobileHPActor::setDead() {
 
 void MobileHPActor::doSomething() {
     
-    setHitpoints(-1);
-    m_startX = getX();
-    m_startY = getY();
+    if (!isDead()) {
     
-    if (hitpoints() == 0) {
+        setHitpoints(-1);
+        m_startX = getX();
+        m_startY = getY();
         
-        MobileHPActor::setDead();
-        return;
+        if (hitpoints() == 0) {
+            
+            MobileHPActor::setDead();
+            return;
+            
+        }
         
+        if (m_ticksToSleep > 0) {
+            
+            m_ticksToSleep--;
+            return;
+            
+        }
+        
+        specializedDoSomething();
+    
     }
-    
-    if (m_ticksToSleep > 0) {
         
-        m_ticksToSleep--;
-        return;
-        
-    }
-    
-    specializedDoSomething();
-    
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -268,9 +272,9 @@ void Grasshopper::specializedDoSomething() {
             m_stepsToMove = 0;
         
         adjustTicksToSleep(2);
-        
-    }
     
+    }
+        
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -302,12 +306,18 @@ Grasshopper(1600, IID_ADULT_GRASSHOPPER, startX, startY, p) {
     
 }
 
+void AdultGrasshopper::grasshopperDoSomething() {
+    
+    if (randInt(1, 3) == 1 && getPointerToWorld()->
+    
+}
+
 ///////////////////////////////////////////////////////////////////////////
 // Active No HP Actor Implementation
 ///////////////////////////////////////////////////////////////////////////
 
 void ActiveNoHPActor::doSomething() {
     
-    
+    getPointerToWorld()->stunActors(this, getX(), getY());
     
 }

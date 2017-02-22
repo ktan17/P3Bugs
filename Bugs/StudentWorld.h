@@ -111,8 +111,8 @@ public:
             
         }
         
-        moveActors();
         removeDeadActors();
+        moveActors();
         
         if (m_tickCount < 2000)
             return GWSTATUS_CONTINUE_GAME;
@@ -142,6 +142,7 @@ public:
     
     // For Ants and Grasshoppers
     bool attemptToMove(MobileHPActor *caller, int startX, int startY, int destX, int destY);
+    bool attemptToBite(MobileHPActor *caller, int X, int Y, int damage);
     int attemptToEat(int X, int Y, int amount);
     void moveActors();
     void createFoodOn(int X, int Y);

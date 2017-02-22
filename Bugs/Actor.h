@@ -50,7 +50,7 @@ public:
     
     // Mutators
     void setHitpoints(int n) { m_hitpoints += n; }
-    void setDead();
+    virtual void setDead();
     virtual void doSomething() = 0;
     
 private:
@@ -130,7 +130,6 @@ public:
     bool isStunned() const { return m_stunned; }
     
     // Mutators
-    //virtual void attemptToMove(int destX, int destY);
     void adjustTicksToSleep(int n);
     void setStunned(bool stunned);
     virtual void setDead();
@@ -207,7 +206,7 @@ public:
     virtual ~AdultGrasshopper() {} // TODO
     
     // Mutators
-    virtual void grasshopperDoSomething() {} // TODO
+    virtual void grasshopperDoSomething();
     
 };
 
@@ -262,8 +261,6 @@ public:
     virtual ~WaterPool() {} // TODO
     
     // Mutators
-    virtual void doSomething() {} // TODO
-    //virtual void specializedDoSomething();
     
 };
 
@@ -277,8 +274,6 @@ public:
     virtual ~Poison() {} // TODO
     
     // Mutators
-    virtual void doSomething() {} // TODO
-    //virtual void specializedDoSomething();
     
 };
 
