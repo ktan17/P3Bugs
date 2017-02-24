@@ -1,5 +1,6 @@
 #include "Actor.h"
 #include "StudentWorld.h"
+#include <cmath>
 
 // Students:  Add code to this file (if you wish), Actor.h, StudentWorld.h, and StudentWorld.cpp
 
@@ -7,8 +8,8 @@
 // HP Actor Implementation
 ///////////////////////////////////////////////////////////////////////////
 
-HPActor::HPActor(int startingHP, int imageID, int startX, int startY, StudentWorld *p, bool isMobile,Direction dir, int depth) :
-Actor(imageID, startX, startY, p, dir, depth) {
+HPActor::HPActor(int startingHP, int imageID, int startX, int startY, StudentWorld *p, bool isMobile, Direction dir, int depth) :
+Actor(imageID, startX, startY, p, true, dir, depth) {
     
     m_hitpoints = startingHP;
     m_dead = false;
@@ -67,12 +68,34 @@ void HPActor::setDead() {
     
 }
 
+void HPActor::doSomething() {
+    
+    if (!this->isEdible())
+        setHitpoints(-1);
+    
+    if (!this->isDead()) {
+        
+        if (hitpoints() == 0) {
+            // If dead, setDead and return.
+            
+            setDead();
+            return;
+            
+        }
+        
+        HPDoSomething();
+        
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////
 // Food Implementation
 ///////////////////////////////////////////////////////////////////////////
 
 Food::Food(int posX, int posY, StudentWorld *p, int startingHP) :
 HPActor(startingHP, IID_FOOD , posX, posY, p, false, right, 2) {
+    
+    setIsEdible();
     
 }
 
@@ -93,6 +116,22 @@ Anthill::Anthill(int antColony, int posX, int posY, StudentWorld *p) :
 HPActor(8999, IID_ANT_HILL, posX, posY, p, true, right, 2) {
     
     m_colonyNumber = antColony;
+    
+}
+
+void Anthill::HPDoSomething() {
+    
+    int foodAte = getPointerToWorld()->attemptToEat(getX(), getY(), 10000);
+    
+    if (foodAte != -1)
+        setHitpoints(foodAte);
+    
+    if (hitpoints() >= 2000) {
+        
+        getPointerToWorld()->createAnt(this);
+        setHitpoints(-1500);
+        
+    }
     
 }
 
@@ -149,29 +188,25 @@ void MobileHPActor::setDead() {
     
 }
 
-void MobileHPActor::doSomething() {
+void MobileHPActor::HPDoSomething() {
+    // For all Mobile HP Actors i.e. Ants and Grasshoppers
     
     if (!isDead()) {
-    
-        setHitpoints(-1);
+        
+        // Remember the position that this Actor started on.
         m_startX = getX();
         m_startY = getY();
         
-        if (hitpoints() == 0) {
-            
-            MobileHPActor::setDead();
-            return;
-            
-        }
-        
         if (m_ticksToSleep > 0) {
+            // If sleeping, decrement ticksToSleep and return.
             
             m_ticksToSleep--;
             return;
             
         }
         
-        specializedDoSomething();
+        // Otherwise, the actor is going to do something...
+        mobileDoSomething();
     
     }
         
@@ -199,14 +234,21 @@ Grasshopper::Grasshopper(int startingHP, int imageID, int startX, int startY, St
 MobileHPActor(startingHP, imageID, startX, startY, p, 1) {
     
     m_stepsToMove = randInt(2, 10);
+    m_didBiteOrJump = false;
     
 }
 
-void Grasshopper::specializedDoSomething() {
+void Grasshopper::mobileDoSomething() {
     
+    // New tick, so reset didBiteOrJump.
+    m_didBiteOrJump = false;
+    
+    // Perform the differentiated Adult and Baby Grasshopper instructions.
     grasshopperDoSomething();
     
-    if (!isDead()) {
+    // Grasshopper may have died/bitten/jumped is grasshopperDoSomething(); spec requires we immediately
+    // return in that case.
+    if (!isDead() && !m_didBiteOrJump) {
         
         int foodAte = getPointerToWorld()->attemptToEat(getX(), getY(), 200);
         
@@ -223,6 +265,7 @@ void Grasshopper::specializedDoSomething() {
             
         }
         
+        // setStunned is only reset to false if the grasshopper will move a square.
         setStunned(false);
         
         if (m_stepsToMove == 0) {
@@ -232,6 +275,7 @@ void Grasshopper::specializedDoSomething() {
             
         }
         
+        // Based on the direction, figure out where the destination square will be...
         int destX = 0, destY = 0;
         
         switch (getDirection()) {
@@ -261,7 +305,8 @@ void Grasshopper::specializedDoSomething() {
                 
         }
         
-        if (getPointerToWorld()->attemptToMove(this, getX(), getY(), destX, destY)) {
+        // ... and attempt to move there.
+        if (getPointerToWorld()->attemptToMove(this, destX, destY)) {
             
             moveTo(destX, destY);
             m_stepsToMove--;
@@ -269,8 +314,9 @@ void Grasshopper::specializedDoSomething() {
         }
         
         else
-            m_stepsToMove = 0;
+            m_stepsToMove = 0;  // Object that can block actor has blocked the move.
         
+        // Grasshopper has done something, now it must sleep for 2 ticks.
         adjustTicksToSleep(2);
     
     }
@@ -308,7 +354,36 @@ Grasshopper(1600, IID_ADULT_GRASSHOPPER, startX, startY, p) {
 
 void AdultGrasshopper::grasshopperDoSomething() {
     
-    //if (randInt(1, 3) == 1 && getPointerToWorld()->
+    if (randInt(1, 3) == 1 && getPointerToWorld()->attemptToBite(this, getX(), getY(), 50)) {
+        
+        setDidBiteOrJump(true);
+        return;
+    
+    }
+    
+    if (randInt(1, 10) == 1) {
+        
+        double theta = randInt(0, 359) * M_PI / 180;
+        int radius = randInt(1, 10);
+        
+        int posX = getX() + round(radius * cos(theta));
+        int posY = getY() + round(radius * sin(theta));
+        
+    while ((posX < 0 || posX > 63 || posY < 0 || posY > 63) || getPointerToWorld()->isBlockOn(posX, posY)) {
+        
+            theta = randInt(0, 359) * M_PI / 180;
+            radius = randInt(1, 10);
+            posX = getX() + round(radius * cos(theta));
+            posY = getY() + round(radius * sin(theta));
+        
+    }
+        
+        moveTo(posX, posY);
+        getPointerToWorld()->recordJump(this, getStartX(), getStartY(), getX(), getY());
+        setDidBiteOrJump(true);
+        return;
+        
+    }
     
 }
 

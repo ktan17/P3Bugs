@@ -23,6 +23,13 @@ public:
     
     ~StudentWorld() {
         
+        std::map<Coordinate, std::vector<Actor *>>::iterator it;
+        
+        for (it = mapOfActors.begin(); it != mapOfActors.end(); it++)
+            for (int i = 0; i < (*it).second.size(); i++)
+                if ((*it).second[i] != nullptr)
+                    delete (*it).second[i];
+            
     }
     
     // Required functions
@@ -70,18 +77,22 @@ public:
                         
                     case Field::anthill0:
                         mapOfActors.insert({makeCoordinate(i, j), {new Anthill(0, i, j, this)}});
+                        m_antCount.push_back(0);
                         break;
                         
                     case Field::anthill1:
                         mapOfActors.insert({makeCoordinate(i, j), {new Anthill(1, i, j, this)}});
+                        m_antCount.push_back(0);
                         break;
                         
                     case Field::anthill2:
                         mapOfActors.insert({makeCoordinate(i, j), {new Anthill (2, i, j, this)}});
+                        m_antCount.push_back(0);
                         break;
                         
                     case Field::anthill3:
                         mapOfActors.insert({makeCoordinate(i, j), {new Anthill (3, i, j, this)}});
+                        m_antCount.push_back(0);
                         break;
                         
                     case Field::grasshopper:
@@ -126,12 +137,16 @@ public:
         std::map<Coordinate, std::vector<Actor *>>::iterator it;
         
         for (it = mapOfActors.begin(); it != mapOfActors.end(); it++)
-            for (int i = 0; i < (*it).second.size(); i++)
+            for (int i = 0; i < (*it).second.size(); i++) {
+                
                 delete (*it).second[i];
+                (*it).second[i] = nullptr;
+                
+            }
     }
     
     // Accessors
-    bool isFoodOn(int X, int Y);
+    bool isBlockOn(int X, int Y);
     
     // Mutators
     void setDisplayText();
@@ -141,12 +156,14 @@ public:
     void removeDeadActors();
     
     // For Ants and Grasshoppers
-    bool attemptToMove(MobileHPActor *caller, int startX, int startY, int destX, int destY);
-    bool attemptToBite(MobileHPActor *caller, int X, int Y, int damage);
+    bool attemptToMove(MobileHPActor *caller, int destX, int destY);
+    bool attemptToBite(MobileHPActor *caller, int X, int Y, unsigned int damage);
     int attemptToEat(int X, int Y, int amount);
     void moveActors();
     void createFoodOn(int X, int Y);
     void growUpGrasshopper(int X, int Y);
+    void recordJump(AdultGrasshopper *caller, int startX, int startY, int destX, int destY);
+    void createAnt(Anthill* caller);
     
     // For Poison and Water Pools
     void stunActors(ActiveNoHPActor *caller, int X, int Y);
@@ -199,6 +216,7 @@ private:
     }
     
     int m_tickCount;
+    std::vector<int> m_antCount;
     
 };
 

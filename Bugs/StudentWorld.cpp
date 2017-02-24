@@ -13,7 +13,7 @@ GameWorld* createStudentWorld(string assetDir)
 // StudentWorld Implementation
 ///////////////////////////////////////////////////////////////////////////
 
-bool StudentWorld::isFoodOn(int X, int Y) {
+bool StudentWorld::isBlockOn(int X, int Y) {
     
     Coordinate a(X, Y);
     
@@ -22,7 +22,7 @@ bool StudentWorld::isFoodOn(int X, int Y) {
     
     for (int i = 0; i < mapOfActors[a].size(); i++) {
         
-        if (dynamic_cast<Food *>(mapOfActors[a][i]) != nullptr)
+        if (mapOfActors[a][i]->canBlockMovingActor())
             return true;
         
     }
@@ -90,11 +90,13 @@ void StudentWorld::removeDeadActors() {
     
 }
 
-bool StudentWorld::attemptToMove(MobileHPActor *caller, int startX, int startY, int destX, int destY) {
+bool StudentWorld::attemptToMove(MobileHPActor *caller, int destX, int destY) {
+    // Checks if a Mobile HP Actor can move to a square. Returns false if it can't, returns true and remembers
+    // to update the pointer position of the Actor in mapOfActors if it can.
     
     Coordinate a(destX, destY);
     
-    if (mapOfActors[a].size() == 1 && dynamic_cast<Pebble *>(mapOfActors[a][0]) != nullptr)
+    if (mapOfActors[a].size() == 1 && mapOfActors[a][0]->canBlockMovingActor())
         return false;
     
     else {
@@ -106,9 +108,49 @@ bool StudentWorld::attemptToMove(MobileHPActor *caller, int startX, int startY, 
     
 }
 
-bool StudentWorld::attemptToBite(MobileHPActor *caller, int X, int Y, int damage) {
+bool StudentWorld::attemptToBite(MobileHPActor *caller, int X, int Y, unsigned int damage) {
+    // unsigned int to prevent negative integer passes...
     
-    return false;
+    Coordinate a(X, Y);
+    
+    if (mapOfActors[a].size() == 1)
+        return false;
+    
+    std::vector<MobileHPActor *> biteCandidates;
+    
+    for (int i = 0; i < mapOfActors[a].size(); i++) {
+        
+        if (!mapOfActors[a][i]->isHPActor() || mapOfActors[a][i] == caller)
+            continue;
+        
+        if (static_cast<HPActor *>(mapOfActors[a][i])->isMobile())
+            biteCandidates.push_back(static_cast<MobileHPActor *>(mapOfActors[a][i]));
+        
+    }
+    
+    if (biteCandidates.empty())
+        return false;
+    
+    int elementToBeBitten = randInt(0, biteCandidates.size()-1);
+    
+    biteCandidates[elementToBeBitten]->setHitpoints(-damage);
+    
+    if (biteCandidates[elementToBeBitten]->hitpoints() <= 0) {
+        
+        biteCandidates[elementToBeBitten]->setDead();
+        return true;
+        
+    }
+    
+    AdultGrasshopper *aGPointer = dynamic_cast<AdultGrasshopper *>(biteCandidates[elementToBeBitten]);
+    
+    if (aGPointer != nullptr) {
+        
+        attemptToBite(biteCandidates[elementToBeBitten], X, Y, 50);
+        
+    }
+    
+    return true;
     
 }
 
@@ -121,7 +163,7 @@ int StudentWorld::attemptToEat(int X, int Y, int amount) {
     
     for (int i = 0; i < mapOfActors[a].size(); i++) {
         
-        if (dynamic_cast<Food *>(mapOfActors[a][i]) != nullptr && !static_cast<Food *>(mapOfActors[a][i])->isDead()) {
+        if (mapOfActors[a][i]->isEdible() && !static_cast<Food *>(mapOfActors[a][i])->isDead()) {
             
             Food* foodPointer = static_cast<Food *>(mapOfActors[a][i]);
             
@@ -151,6 +193,7 @@ int StudentWorld::attemptToEat(int X, int Y, int amount) {
 }
 
 void StudentWorld::moveActors() {
+    // Moves the Actor pointers AFTER all doSomething() methods have been called during a tick.
     
     if (actorsToBeMoved.empty())
         return;
@@ -185,7 +228,7 @@ void StudentWorld::createFoodOn(int X, int Y) {
     
     for (int i = 0; i < mapOfActors[a].size(); i++) {
         
-        if (dynamic_cast<Food *>(mapOfActors[a][i]) != nullptr) {
+        if (mapOfActors[a][i]->isEdible()) {
             
             static_cast<Food *>(mapOfActors[a][i])->setHitpoints(100);
             return;
@@ -205,6 +248,21 @@ void StudentWorld::growUpGrasshopper(int X, int Y) {
     
 }
 
+void StudentWorld::recordJump(AdultGrasshopper *caller, int startX, int startY, int destX, int destY) {
+    
+    actorsToBeMoved.push_back(caller);
+    
+}
+
+void StudentWorld::createAnt(Anthill *caller) {
+    
+    Coordinate a(caller->getX(), caller->getY());
+    mapOfActors[a].push_back(new Ant(caller->getColonyNumber(), a.getX(), a.getY(), this));
+    
+    m_antCount[caller->getColonyNumber()]++;
+    
+}
+
 void StudentWorld::stunActors(ActiveNoHPActor *caller, int X, int Y) {
     
     Coordinate a(X, Y);
@@ -213,6 +271,7 @@ void StudentWorld::stunActors(ActiveNoHPActor *caller, int X, int Y) {
         return;
     
     for (int i = 1; i < mapOfActors[a].size(); i++) {
+        // i = 1 because Poison object is always the first element of the vector.
         
         if (!static_cast<HPActor *>(mapOfActors[a][i])->isMobile())
             continue;

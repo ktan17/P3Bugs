@@ -15,16 +15,23 @@ class Actor : public GraphObject {
     
 public:
     // Constructor / Destructor
-    Actor(int imageID, int startX, int startY, StudentWorld *p, Direction dir = right, int depth = 1) : GraphObject(imageID, startX, startY, dir, depth), pToWorld(p) {}
-    virtual ~Actor() {} // TODO
+    Actor(int imageID, int startX, int startY, StudentWorld *p, bool isHPActor, Direction dir = right, int depth = 1, bool canBlockMovingActor = false, bool isEdible = false) : GraphObject(imageID, startX, startY, dir, depth), pToWorld(p), m_isHPActor(isHPActor) { m_canBlockMovingActor = canBlockMovingActor; m_isEdible = isEdible; }
+    virtual ~Actor() {}
     
     // Accessors
+    bool isHPActor() const { return m_isHPActor; }
+    bool canBlockMovingActor() const { return m_canBlockMovingActor; }
+    bool isEdible() const { return m_isEdible; }
     StudentWorld* getPointerToWorld() const { return pToWorld; }
     
     // Mutators
+    void setIsEdible() { m_isEdible = true; }
     virtual void doSomething() = 0;
     
 private:
+    bool m_isHPActor;
+    bool m_canBlockMovingActor;
+    bool m_isEdible;
     StudentWorld *pToWorld;
     
 };
@@ -38,7 +45,7 @@ class HPActor : public Actor {
 public:
     // Constructor / Destructor
     HPActor(int startingHP, int imageID, int startX, int startY, StudentWorld *p, bool isMobile, Direction dir = right, int depth = 1);
-    virtual ~HPActor() {} // TODO
+    virtual ~HPActor() {}
     
     // Helper Functions
     int correctArtwork(int colonyNumber, HPActor* p) const;
@@ -51,7 +58,8 @@ public:
     // Mutators
     void setHitpoints(int n) { m_hitpoints += n; }
     virtual void setDead();
-    virtual void doSomething() = 0;
+    virtual void doSomething();
+    virtual void HPDoSomething() = 0;
     
 private:
     int m_hitpoints;
@@ -64,17 +72,19 @@ private:
 // Static HP Actor Declarations
 ////////////////////////////////////////////
 
-// TODO: Food
+//////////////////////
+// Food: *COMPLETE* //
+//////////////////////
 
 class Food : public HPActor {
     
 public:
     // Constructor / Destructor
     Food(int posX, int posY, StudentWorld *p, int startingHP = 6000);
-    virtual ~Food() {} // TODO
+    virtual ~Food() {}
     
     // Mutators
-    virtual void doSomething() {}
+    virtual void HPDoSomething() {}
     
 };
 
@@ -85,14 +95,16 @@ class Pheromone : public HPActor {
 public:
     // Constructor / Destructor
     Pheromone(int antColony, int posX, int posY, StudentWorld *p); // TODO
-    virtual ~Pheromone() {} // TODO
+    virtual ~Pheromone() {}
     
     // Mutators
-    virtual void doSomething() {} // TODO
+    virtual void HPDoSomething() {} // TODO
     
 };
 
-// TODO: Anthill
+/////////////////////////
+// Anthill: *COMPLETE* //
+/////////////////////////
 
 class Anthill : public HPActor {
     
@@ -101,8 +113,11 @@ public:
     Anthill(int antColony, int posX, int posY, StudentWorld *p); // TODO
     virtual ~Anthill() {}
     
+    // Accessors
+    int getColonyNumber() const { return m_colonyNumber; }
+    
     // Mutators
-    virtual void doSomething() {} // TODO
+    virtual void HPDoSomething();
     
 private:
     int m_colonyNumber;
@@ -118,7 +133,7 @@ class MobileHPActor : public HPActor {
 public:
     // Constructor / Destructor
     MobileHPActor(int startingHP, int imageID, int startX, int startY, StudentWorld *p, int depth);
-    virtual ~MobileHPActor() {} // TODO
+    virtual ~MobileHPActor() {}
     
     // Helper Functions
     Direction generateRandomDirection();
@@ -133,8 +148,8 @@ public:
     void adjustTicksToSleep(int n);
     void setStunned(bool stunned);
     virtual void setDead();
-    virtual void doSomething();
-    virtual void specializedDoSomething() = 0;
+    virtual void HPDoSomething();
+    virtual void mobileDoSomething() = 0;
     
 private:
     int m_ticksToSleep;
@@ -153,10 +168,10 @@ class Ant : public MobileHPActor {
 public:
     // Constructor / Destructor
     Ant(int colonyNumber, int startX, int startY, StudentWorld *p);
-    virtual ~Ant() {} // TODO
+    virtual ~Ant() {}
     
     // Mutators
-    virtual void specializedDoSomething() {} // TODO
+    virtual void mobileDoSomething() {} // TODO
     
 private:
     int m_colonyNumber;
@@ -168,21 +183,25 @@ private:
     
 };
 
-// TODO: Grasshopper
+/////////////////////////////
+// Grasshopper: *COMPLETE* //
+/////////////////////////////
 
 class Grasshopper : public MobileHPActor {
     
 public:
     // Constructor / Destructor
     Grasshopper(int startingHP, int imageID, int startX, int startY, StudentWorld *p);
-    virtual ~Grasshopper() {} // TODO
+    virtual ~Grasshopper() {}
     
     // Mutators
-    virtual void specializedDoSomething();
+    void setDidBiteOrJump(bool didBiteOrJump) { m_didBiteOrJump = didBiteOrJump; }
+    virtual void mobileDoSomething();
     virtual void grasshopperDoSomething() = 0;
     
 private:
     int m_stepsToMove;
+    bool m_didBiteOrJump;
     
 };
 
@@ -191,10 +210,10 @@ class BabyGrasshopper : public Grasshopper {
 public:
     // Constructor / Destructor
     BabyGrasshopper(int startX, int startY, StudentWorld *p);
-    virtual ~BabyGrasshopper() {} // TODO
+    virtual ~BabyGrasshopper() {}
     
     // Mutators
-    virtual void grasshopperDoSomething(); // TODO
+    virtual void grasshopperDoSomething();
     
 };
 
@@ -203,7 +222,7 @@ class AdultGrasshopper : public Grasshopper {
 public:
     // Constructor / Destructor
     AdultGrasshopper(int startX, int startY, StudentWorld *p);
-    virtual ~AdultGrasshopper() {} // TODO
+    virtual ~AdultGrasshopper() {}
     
     // Mutators
     virtual void grasshopperDoSomething();
@@ -214,14 +233,16 @@ public:
 // No HP Actor Declarations
 ///////////////////////////////////////////////////////////////////////////
 
-// TODO: Pebble
+////////////////////////
+// Pebble: *COMPLETE* //
+////////////////////////
 
 class Pebble : public Actor {
     
 public:
     // Constructor / Destructor
-    Pebble(int posX, int posY, StudentWorld *p) : Actor(IID_ROCK, posX, posY, p, right, 1) {}
-    virtual ~Pebble() {} // TODO
+    Pebble(int posX, int posY, StudentWorld *p) : Actor(IID_ROCK, posX, posY, p, false, right, 1, true) {}
+    virtual ~Pebble() {}
     
     // Mutators
     virtual void doSomething() {}
@@ -236,8 +257,8 @@ class ActiveNoHPActor : public Actor {
     
 public:
     // Constructor / Destructor
-    ActiveNoHPActor(int imageID, int posX, int posY, StudentWorld *p, bool isPoison, Direction dir, int depth) : Actor(imageID, posX, posY, p, dir, depth), m_isPoison(isPoison) {}
-    virtual ~ActiveNoHPActor() {} // TODO
+    ActiveNoHPActor(int imageID, int posX, int posY, StudentWorld *p, bool isPoison, Direction dir, int depth) : Actor(imageID, posX, posY, p, false, dir, depth), m_isPoison(isPoison) {}
+    virtual ~ActiveNoHPActor() {}
     
     // Accessors
     bool isPoison() const { return m_isPoison; }
@@ -251,27 +272,31 @@ private:
     
 };
 
-// TODO: Pool of Water
+///////////////////////////
+// Waterpool: *COMPLETE* //
+///////////////////////////
 
 class WaterPool : public ActiveNoHPActor {
     
 public:
     // Constructor / Destructor
     WaterPool(int posX, int posY, StudentWorld *p) : ActiveNoHPActor(IID_WATER_POOL, posX, posY, p, false, right, 2) {}
-    virtual ~WaterPool() {} // TODO
+    virtual ~WaterPool() {}
     
     // Mutators
     
 };
 
-// TODO: Poison
+////////////////////////
+// Poison: *COMPLETE* //
+////////////////////////
 
 class Poison : public ActiveNoHPActor {
     
 public:
     // Constructor / Destructor
     Poison(int posX, int posY, StudentWorld *p) : ActiveNoHPActor(IID_POISON, posX, posY, p, true, right, 2) {}
-    virtual ~Poison() {} // TODO
+    virtual ~Poison() {}
     
     // Mutators
     
