@@ -169,6 +169,37 @@ GraphObject::Direction MobileHPActor::generateRandomDirection() {
     
 }
 
+void MobileHPActor::getDestinationCoordinate(int &destX, int &destY) {
+    
+    switch (getDirection()) {
+            
+        case up:
+            destX = getX();
+            destY = getY()+1;
+            break;
+            
+        case right:
+            destX = getX()+1;
+            destY = getY();
+            break;
+            
+        case down:
+            destX = getX();
+            destY = getY()-1;
+            break;
+            
+        case left:
+            destX = getX()-1;
+            destY = getY();
+            break;
+            
+        default:
+            break;
+            
+    }
+    
+}
+
 void MobileHPActor::adjustTicksToSleep(int n) {
     
     m_ticksToSleep += n;
@@ -223,6 +254,38 @@ MobileHPActor(1500, correctArtwork(colonyNumber, this), startX, startY, p, 1){
     m_heldFood = 0;
     m_lastRandomNumberHeld = 0;
     m_instructionCount = 0;
+    m_wasBitten = false;
+    m_wasBlockedFromMoving = false;
+    
+    m_compiler = getPointerToWorld()->getCompiler(colonyNumber);
+    
+}
+
+void Ant::mobileDoSomething() {
+    
+    Compiler::Command cmd;
+    
+    for (int i = 0; i < 10; i++) {
+    
+        if (m_compiler->getCommand(m_instructionCount, cmd)) {
+            
+            switch (cmd.opcode) {
+                    
+                case Compiler::moveForward:
+                    break;
+                    
+            }
+            
+        }
+        
+        else {
+            
+            setDead();
+            return;
+            
+        }
+        
+    }
     
 }
 
@@ -278,32 +341,7 @@ void Grasshopper::mobileDoSomething() {
         // Based on the direction, figure out where the destination square will be...
         int destX = 0, destY = 0;
         
-        switch (getDirection()) {
-                
-            case up:
-                destX = getX();
-                destY = getY()+1;
-                break;
-                
-            case right:
-                destX = getX()+1;
-                destY = getY();
-                break;
-                
-            case down:
-                destX = getX();
-                destY = getY()-1;
-                break;
-                
-            case left:
-                destX = getX()-1;
-                destY = getY();
-                break;
-                
-            default:
-                break;
-                
-        }
+        getDestinationCoordinate(destX, destY);
         
         // ... and attempt to move there.
         if (getPointerToWorld()->attemptToMove(this, destX, destY)) {

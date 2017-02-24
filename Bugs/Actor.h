@@ -88,17 +88,19 @@ public:
     
 };
 
-// TODO: Pheromone
+///////////////////////////
+// Pheromone: *COMPLETE* //
+///////////////////////////
 
 class Pheromone : public HPActor {
     
 public:
     // Constructor / Destructor
-    Pheromone(int antColony, int posX, int posY, StudentWorld *p); // TODO
+    Pheromone(int antColony, int posX, int posY, StudentWorld *p);
     virtual ~Pheromone() {}
     
     // Mutators
-    virtual void HPDoSomething() {} // TODO
+    virtual void HPDoSomething() {}
     
 };
 
@@ -137,6 +139,7 @@ public:
     
     // Helper Functions
     Direction generateRandomDirection();
+    void getDestinationCoordinate(int &destX, int &destY);
     
     // Accessors
     int ticksToSleep() const { return m_ticksToSleep; }
@@ -171,13 +174,15 @@ public:
     virtual ~Ant() {}
     
     // Mutators
-    virtual void mobileDoSomething() {} // TODO
+    virtual void mobileDoSomething();
     
 private:
     int m_colonyNumber;
     int m_heldFood;
     int m_lastRandomNumberHeld;
     int m_instructionCount;
+    bool m_wasBitten;
+    bool m_wasBlockedFromMoving;
     
     Compiler* m_compiler;
     

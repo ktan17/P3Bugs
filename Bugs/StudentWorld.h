@@ -5,6 +5,7 @@
 #include "GameConstants.h"
 #include "Field.h"
 #include "Actor.h"
+#include "Compiler.h"
 #include <string>
 #include <set>
 #include <map>
@@ -29,6 +30,10 @@ public:
             for (int i = 0; i < (*it).second.size(); i++)
                 if ((*it).second[i] != nullptr)
                     delete (*it).second[i];
+        
+        for (int i = 0; i < m_compilers.size(); i++)
+            if (m_compilers[i] != nullptr)
+                delete m_compilers[i];
             
     }
     
@@ -46,6 +51,21 @@ public:
             
             setError(fieldFile + " " + error);
             return GWSTATUS_LEVEL_ERROR;
+            
+        }
+        
+        std::vector<std::string> antFileNames = getFilenamesOfAntPrograms();
+        
+        for (int i = 0; i < antFileNames.size(); i++) {
+            
+            m_compilers.push_back(new Compiler);
+            
+            if (!m_compilers[i]->compile(antFileNames[i], error)) {
+                
+                setError(antFileNames[i] + " " + error);
+                return GWSTATUS_LEVEL_ERROR;
+                
+            }
             
         }
         
@@ -143,10 +163,18 @@ public:
                 (*it).second[i] = nullptr;
                 
             }
+        
+        for (int i = 0; i < m_compilers.size(); i++) {
+            
+            delete m_compilers[i];
+            m_compilers[i] = nullptr;
+            
+        }
     }
     
     // Accessors
     bool isBlockOn(int X, int Y);
+    Compiler* getCompiler(int colonyNumber) const { return m_compilers[colonyNumber]; }
     
     // Mutators
     void setDisplayText();
@@ -217,6 +245,7 @@ private:
     
     int m_tickCount;
     std::vector<int> m_antCount;
+    std::vector<Compiler *> m_compilers;
     
 };
 
