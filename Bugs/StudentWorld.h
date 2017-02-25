@@ -6,8 +6,11 @@
 #include "Field.h"
 #include "Actor.h"
 #include "Compiler.h"
+
+#include <iostream>
 #include <string>
-#include <set>
+#include <sstream>
+#include <iomanip>
 #include <map>
 #include <vector>
 
@@ -18,7 +21,7 @@ class StudentWorld : public GameWorld
 public:
     // Constructor / Destructor
     StudentWorld(std::string assetDir)
-    : GameWorld(assetDir), m_tickCount(0)
+    : GameWorld(assetDir), m_tickCount(0), m_winningAntColony(-1)
     {
     }
     
@@ -42,6 +45,7 @@ public:
     {
         
         m_tickCount = 0;
+        m_winningAntColony = -1;
         
         std::string fieldFile = getFieldFilename();
         Field f;
@@ -76,7 +80,6 @@ public:
                 switch (f.getContentsOf(i, j)) {
                         
                     case Field::empty:
-                        emptyCoordinates.insert(makeCoordinate(i, j));
                         break;
                         
                     case Field::rock:
@@ -145,11 +148,50 @@ public:
         removeDeadActors();
         moveActors();
         
+        std::ostringstream oss;
+        int k = 2000 - m_tickCount;
+        oss << "Ticks:" << std::setw(5) << k << " - ";
+        
+        for (int i = 0; i < m_compilers.size(); i++) {
+            
+            oss << m_compilers[i]->getColonyName();
+            
+            if (m_winningAntColony != -1 && i == m_winningAntColony)
+                oss << "*";
+            
+            oss << ":";
+            
+            std::string antNumString;
+            
+            if (m_antCount[i] < 10)
+                oss << " 0";
+            else
+                oss << " ";
+            
+            oss << m_antCount[i] << " ants";
+            
+            if (i < m_compilers.size() - 1)
+                oss << "  ";
+            
+        }
+        
+        setGameStatText(oss.str());
+        
         if (m_tickCount < 2000)
             return GWSTATUS_CONTINUE_GAME;
-        else
-            return GWSTATUS_PLAYER_WON;
         
+        else {
+            
+            if (m_winningAntColony != -1) {
+                
+                setWinner(m_compilers[m_winningAntColony]->getColonyName());
+                return GWSTATUS_PLAYER_WON;
+                
+            }
+            
+            return GWSTATUS_NO_WINNER;
+            
+        }
     }
     
     virtual void cleanUp()
@@ -177,7 +219,6 @@ public:
     Compiler* getCompiler(int colonyNumber) const { return m_compilers[colonyNumber]; }
     
     // Mutators
-    void setDisplayText();
     
     // For HP Actors
     void recordDeadActorPosition(int X, int Y);
@@ -186,9 +227,11 @@ public:
     // For Ants and Grasshoppers
     bool attemptToMove(MobileHPActor *caller, int destX, int destY);
     bool attemptToBite(MobileHPActor *caller, int X, int Y, unsigned int damage);
+    bool detectActorOn(Ant* caller, int X, int Y, SearchTarget target);
     int attemptToEat(int X, int Y, int amount);
     void moveActors();
-    void createFoodOn(int X, int Y);
+    void createFoodOn(int X, int Y, int amount);
+    void createPheromoneOn(Ant *caller);
     void growUpGrasshopper(int X, int Y);
     void recordJump(AdultGrasshopper *caller, int startX, int startY, int destX, int destY);
     void createAnt(Anthill* caller);
@@ -231,7 +274,6 @@ private:
         
     };
     
-    std::set<Coordinate> emptyCoordinates;
     std::map<Coordinate, std::vector<Actor *>> mapOfActors;
     std::vector<Coordinate> actorsToBeRemoved;
     std::vector<MobileHPActor *> actorsToBeMoved;
@@ -244,6 +286,7 @@ private:
     }
     
     int m_tickCount;
+    int m_winningAntColony;
     std::vector<int> m_antCount;
     std::vector<Compiler *> m_compilers;
     

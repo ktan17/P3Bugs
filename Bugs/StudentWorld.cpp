@@ -31,29 +31,6 @@ bool StudentWorld::isBlockOn(int X, int Y) {
     
 }
 
-void StudentWorld::setDisplayText() {
-    
-    int ticks = m_tickCount;
-    int antsAnt0, antsAnt1, antsAnt2, antsAnt3; int winningAntNumber;
-    
-    //TODO!
-    /*antsAnt0 = getNumberOfAntsForAnt(0);
-    antsAnt1 = getNumberOfAntsForAnt(1);
-    antsAnt2 = getNumberOfAntsForAnt(2);
-    antsAnt3 = getNumberOfAntsForAnt(3);
-    
-    winningAntNumber = getWinningAntNumber();
-
-    string s = someFunctionToFormatThingsNicely(ticks, antsAnt0,
-                                                antsAnt1, antsAnt2, antsAnt3, winningAntNumber );
-    
-    // Finally, update the display text at the top of the screen with your
-    // newly created stats
-    setGameStatText(s); // calls our provided GameWorld::setGameStatText*/
-    
-    
-}
-
 void StudentWorld::recordDeadActorPosition(int X, int Y) {
     
     actorsToBeRemoved.push_back(makeCoordinate(X, Y));
@@ -80,9 +57,6 @@ void StudentWorld::removeDeadActors() {
             }
             
         }
-        
-        if (mapOfActors[a].empty())
-            emptyCoordinates.insert(a);
         
         actorsToBeRemoved.pop_back();
         
@@ -113,6 +87,8 @@ bool StudentWorld::attemptToBite(MobileHPActor *caller, int X, int Y, unsigned i
     
     Coordinate a(X, Y);
     
+    bool callerHasColony = caller->hasColony();
+    
     if (mapOfActors[a].size() == 1)
         return false;
     
@@ -123,9 +99,14 @@ bool StudentWorld::attemptToBite(MobileHPActor *caller, int X, int Y, unsigned i
         if (!mapOfActors[a][i]->isHPActor() || mapOfActors[a][i] == caller)
             continue;
         
-        if (static_cast<HPActor *>(mapOfActors[a][i])->isMobile())
+        if (static_cast<HPActor *>(mapOfActors[a][i])->isMobile()) {
+            
+            if (callerHasColony && static_cast<MobileHPActor *>(mapOfActors[a][i])->hasColony() && static_cast<Ant *>(mapOfActors[a][i])->getColonyNumber() == static_cast<Ant *>(mapOfActors[a][i])->getColonyNumber())
+                continue;
+            
             biteCandidates.push_back(static_cast<MobileHPActor *>(mapOfActors[a][i]));
-        
+            
+        }
     }
     
     if (biteCandidates.empty())
@@ -144,20 +125,115 @@ bool StudentWorld::attemptToBite(MobileHPActor *caller, int X, int Y, unsigned i
     
     AdultGrasshopper *aGPointer = dynamic_cast<AdultGrasshopper *>(biteCandidates[elementToBeBitten]);
     
-    if (aGPointer != nullptr) {
-        
+    if (aGPointer != nullptr)
         attemptToBite(biteCandidates[elementToBeBitten], X, Y, 50);
-        
-    }
+    
+    Ant *antPointer = dynamic_cast<Ant *>(biteCandidates[elementToBeBitten]);
+    
+    if (antPointer != nullptr)
+        antPointer->setWasBitten();
     
     return true;
     
 }
 
+bool StudentWorld::detectActorOn(Ant *caller, int X, int Y, SearchTarget target) {
+    
+    Coordinate a(X, Y);
+    
+    switch (target) {
+            
+        case EnemyTarget: {
+            
+            for (int i = 0; i < mapOfActors[a].size(); i++) {
+                
+                if (mapOfActors[a][i]->isHPActor() && static_cast<HPActor *>(mapOfActors[a][i])->isMobile()) {
+                    
+                    Ant *pToAnt = dynamic_cast<Ant *>(mapOfActors[a][i]);
+                    
+                    if (pToAnt != nullptr && pToAnt->getColonyNumber() == caller->getColonyNumber())
+                        continue;
+                    
+                    return true;
+                    
+                }
+                
+            }
+            
+            return false;
+            
+        }
+            
+        case FoodTarget: {
+            
+            for (int i = 0; i < mapOfActors[a].size(); i++) {
+                
+                if (mapOfActors[a][i]->isEdible())
+                    return true;
+                
+            }
+            
+            return false;
+            
+        }
+            
+        case AnthillTarget: {
+            
+            for (int i = 0; i < mapOfActors[a].size(); i++) {
+                
+                Anthill *pToAnthill = dynamic_cast<Anthill *>(mapOfActors[a][i]);
+                
+                if (pToAnthill != nullptr && pToAnthill->getColonyNumber() == caller->getColonyNumber())
+                    return true;
+                
+            }
+            
+            return false;
+            
+        }
+            
+        case PheromoneTarget: {
+            
+            for (int i = 0; i < mapOfActors[a].size(); i++) {
+                
+                if (mapOfActors[a][i]->isPheromone() && static_cast<Pheromone *>(mapOfActors[a][i])->getColonyNumber() == caller->getColonyNumber())
+                    return true;
+                
+            }
+            
+            return false;
+            
+        }
+            
+        case DangerTarget: {
+            
+            for (int i = 0; i < mapOfActors[a].size(); i++) {
+                
+                if (mapOfActors[a][i]->isDangerous()) {
+                    
+                    Ant *pToAnt = dynamic_cast<Ant *>(mapOfActors[a][i]);
+                    
+                    if (pToAnt != nullptr && pToAnt->getColonyNumber() == caller->getColonyNumber())
+                        continue;
+                    
+                    return true;
+                    
+                }
+                
+            }
+            
+            return false;
+            
+        }
+            
+    }
+    
+}
+
 int StudentWorld::attemptToEat(int X, int Y, int amount) {
     // Called by an Actor. Function only modifies the Food Actor if found at position X, Y and returns
-    // the amount of food eaten. Else, if no Food Actor found at X, Y, nothing is modified and function
-    // returns -1.
+    // the amount of food eaten/picked up. Else, if no Food Actor found at X, Y, nothing is modified and
+    // function returns -1.
     
     Coordinate a(X, Y);
     
@@ -167,10 +243,10 @@ int StudentWorld::attemptToEat(int X, int Y, int amount) {
             
             Food* foodPointer = static_cast<Food *>(mapOfActors[a][i]);
             
-            if (foodPointer->hitpoints() > 200) {
+            if (foodPointer->hitpoints() > amount) {
                 
-                foodPointer->setHitpoints(-200);
-                return 200;
+                foodPointer->setHitpoints(-amount);
+                return amount;
                 
             }
             
@@ -203,15 +279,8 @@ void StudentWorld::moveActors() {
         Coordinate start(actorsToBeMoved[i]->getStartX(), actorsToBeMoved[i]->getStartY());
         Coordinate dest(actorsToBeMoved[i]->getX(), actorsToBeMoved[i]->getY());
         
-        if (emptyCoordinates.find(dest) != emptyCoordinates.end())
-            emptyCoordinates.erase(dest);
-        
         mapOfActors[dest].push_back(actorsToBeMoved[i]);
-        
         mapOfActors[start].erase(remove(mapOfActors[start].begin(), mapOfActors[start].end(), actorsToBeMoved[i]));
-        
-        if (mapOfActors[start].empty())
-            emptyCoordinates.insert(start);
     
     }
     
@@ -222,7 +291,7 @@ void StudentWorld::moveActors() {
     
 }
 
-void StudentWorld::createFoodOn(int X, int Y) {
+void StudentWorld::createFoodOn(int X, int Y, int amount) {
     
     Coordinate a(X, Y);
     
@@ -230,14 +299,43 @@ void StudentWorld::createFoodOn(int X, int Y) {
         
         if (mapOfActors[a][i]->isEdible()) {
             
-            static_cast<Food *>(mapOfActors[a][i])->setHitpoints(100);
+            static_cast<Food *>(mapOfActors[a][i])->setHitpoints(amount);
             return;
             
         }
         
     }
     
-    mapOfActors[a].push_back(new Food(X, Y, this, 100));
+    mapOfActors[a].push_back(new Food(X, Y, this, amount));
+    
+}
+
+void StudentWorld::createPheromoneOn(Ant *caller) {
+    
+    Coordinate a(caller->getX(), caller->getY());
+    
+    for (int i = 0; i < mapOfActors[a].size(); i++) {
+        
+        if (mapOfActors[a][i]->isPheromone()) {
+            
+            Pheromone *pToPheromone = static_cast<Pheromone *>(mapOfActors[a][i]);
+            
+            if (pToPheromone->getColonyNumber() != caller->getColonyNumber())
+                continue;
+            
+            if (pToPheromone->hitpoints() <= 512)
+                pToPheromone->setHitpoints(256);
+            
+            else
+                pToPheromone->setHitpoints(768 - pToPheromone->hitpoints());
+                
+            return;
+            
+        }
+        
+    }
+    
+    mapOfActors[a].push_back(new Pheromone(caller->getColonyNumber(), a.getX(), a.getY(), this));
     
 }
 
@@ -256,10 +354,28 @@ void StudentWorld::recordJump(AdultGrasshopper *caller, int startX, int startY, 
 
 void StudentWorld::createAnt(Anthill *caller) {
     
-    Coordinate a(caller->getX(), caller->getY());
-    mapOfActors[a].push_back(new Ant(caller->getColonyNumber(), a.getX(), a.getY(), this));
+    const int callerColony = caller->getColonyNumber();
     
-    m_antCount[caller->getColonyNumber()]++;
+    Coordinate a(caller->getX(), caller->getY());
+    mapOfActors[a].push_back(new Ant(callerColony, a.getX(), a.getY(), this));
+    
+    m_antCount[callerColony]++;
+    
+    if (m_tickCount > 5) {
+    
+        bool isLargestColony = true;
+        
+        for (int i = 0; i < m_antCount.size(); i++) {
+            
+            if (callerColony != i && m_antCount[callerColony] <= m_antCount[i])
+                isLargestColony = false;
+            
+        }
+        
+        if (isLargestColony)
+            m_winningAntColony = callerColony;
+        
+    }
     
 }
 

@@ -5,6 +5,16 @@
 
 // Students:  Add code to this file, Actor.cpp, StudentWorld.h, and StudentWorld.cpp
 
+///////////////////////////////////////////////////////////////////////////
+// GLOBAL CONSTANTS (only needed by Ant)
+///////////////////////////////////////////////////////////////////////////
+
+enum SearchTarget {
+    
+    EnemyTarget, FoodTarget, AnthillTarget, PheromoneTarget, DangerTarget
+    
+};
+
 class StudentWorld;
 
 ///////////////////////////////////////////////////////////////////////////
@@ -15,23 +25,29 @@ class Actor : public GraphObject {
     
 public:
     // Constructor / Destructor
-    Actor(int imageID, int startX, int startY, StudentWorld *p, bool isHPActor, Direction dir = right, int depth = 1, bool canBlockMovingActor = false, bool isEdible = false) : GraphObject(imageID, startX, startY, dir, depth), pToWorld(p), m_isHPActor(isHPActor) { m_canBlockMovingActor = canBlockMovingActor; m_isEdible = isEdible; }
+    Actor(int imageID, int startX, int startY, StudentWorld *p, bool isHPActor, Direction dir = right, int depth = 1, bool canBlockMovingActor = false, bool isEdible = false, bool isPheromone = false, bool isDangerous = false) : GraphObject(imageID, startX, startY, dir, depth), pToWorld(p), m_isHPActor(isHPActor) { m_canBlockMovingActor = canBlockMovingActor; m_isEdible = isEdible; m_isPheromone = isPheromone; }
     virtual ~Actor() {}
     
     // Accessors
     bool isHPActor() const { return m_isHPActor; }
     bool canBlockMovingActor() const { return m_canBlockMovingActor; }
     bool isEdible() const { return m_isEdible; }
+    bool isPheromone() const { return m_isPheromone; }
+    bool isDangerous() const { return m_isDangerous; }
     StudentWorld* getPointerToWorld() const { return pToWorld; }
     
     // Mutators
     void setIsEdible() { m_isEdible = true; }
+    void setIsPheromone() { m_isPheromone = true; }
+    void setIsDangerous() { m_isDangerous = true; }
     virtual void doSomething() = 0;
     
 private:
     bool m_isHPActor;
     bool m_canBlockMovingActor;
     bool m_isEdible;
+    bool m_isPheromone;
+    bool m_isDangerous;
     StudentWorld *pToWorld;
     
 };
@@ -99,8 +115,14 @@ public:
     Pheromone(int antColony, int posX, int posY, StudentWorld *p);
     virtual ~Pheromone() {}
     
+    // Accessors
+    int getColonyNumber() const { return m_colonyNumber; }
+    
     // Mutators
     virtual void HPDoSomething() {}
+    
+private:
+    int m_colonyNumber;
     
 };
 
@@ -134,7 +156,7 @@ class MobileHPActor : public HPActor {
     
 public:
     // Constructor / Destructor
-    MobileHPActor(int startingHP, int imageID, int startX, int startY, StudentWorld *p, int depth);
+    MobileHPActor(int startingHP, int imageID, int startX, int startY, StudentWorld *p, int depth, bool hasColony = false);
     virtual ~MobileHPActor() {}
     
     // Helper Functions
@@ -146,6 +168,7 @@ public:
     int getStartX() const { return m_startX; }
     int getStartY() const { return m_startY; }
     bool isStunned() const { return m_stunned; }
+    bool hasColony() const { return m_hasColony; }
     
     // Mutators
     void adjustTicksToSleep(int n);
@@ -159,6 +182,7 @@ private:
     int m_startX;
     int m_startY;
     bool m_stunned;
+    bool m_hasColony;
     
 };
 
@@ -173,7 +197,11 @@ public:
     Ant(int colonyNumber, int startX, int startY, StudentWorld *p);
     virtual ~Ant() {}
     
+    // Accessors
+    int getColonyNumber() const { return m_colonyNumber; }
+    
     // Mutators
+    void setWasBitten() { m_wasBitten = true; }
     virtual void mobileDoSomething();
     
 private:
@@ -262,7 +290,7 @@ class ActiveNoHPActor : public Actor {
     
 public:
     // Constructor / Destructor
-    ActiveNoHPActor(int imageID, int posX, int posY, StudentWorld *p, bool isPoison, Direction dir, int depth) : Actor(imageID, posX, posY, p, false, dir, depth), m_isPoison(isPoison) {}
+    ActiveNoHPActor(int imageID, int posX, int posY, StudentWorld *p, bool isPoison, Direction dir, int depth) : Actor(imageID, posX, posY, p, false, dir, depth), m_isPoison(isPoison) { setIsDangerous(); }
     virtual ~ActiveNoHPActor() {}
     
     // Accessors

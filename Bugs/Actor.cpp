@@ -106,6 +106,9 @@ HPActor(startingHP, IID_FOOD , posX, posY, p, false, right, 2) {
 Pheromone::Pheromone(int antColony, int posX, int posY, StudentWorld *p) :
 HPActor(256, correctArtwork(antColony, this), posX, posY, p, false, right, 2) {
     
+    m_colonyNumber = antColony;
+    setIsPheromone();
+    
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -139,13 +142,14 @@ void Anthill::HPDoSomething() {
 // Mobile HP Actor Implementation
 ///////////////////////////////////////////////////////////////////////////
 
-MobileHPActor::MobileHPActor(int startingHP, int imageID, int startX, int startY, StudentWorld *p, int depth) :
+MobileHPActor::MobileHPActor(int startingHP, int imageID, int startX, int startY, StudentWorld *p, int depth, bool hasColony) :
 HPActor(startingHP, imageID, startX, startY, p, true, generateRandomDirection(), depth) {
     
     m_ticksToSleep = 0;
     m_startX = startX;
     m_startY = startY;
     m_stunned = false;
+    m_hasColony = hasColony;
     
 }
 
@@ -215,7 +219,7 @@ void MobileHPActor::setStunned(bool stunned) {
 void MobileHPActor::setDead() {
     
     HPActor::setDead();
-    getPointerToWorld()->createFoodOn(getX(), getY());
+    getPointerToWorld()->createFoodOn(getX(), getY(), 100);
     
 }
 
@@ -248,7 +252,7 @@ void MobileHPActor::HPDoSomething() {
 ///////////////////////////////////////////////////////////////////////////
 
 Ant::Ant(int colonyNumber, int startX, int startY, StudentWorld *p) :
-MobileHPActor(1500, correctArtwork(colonyNumber, this), startX, startY, p, 1){
+MobileHPActor(1500, correctArtwork(colonyNumber, this), startX, startY, p, 1, true){
     
     m_colonyNumber = colonyNumber;
     m_heldFood = 0;
@@ -258,6 +262,8 @@ MobileHPActor(1500, correctArtwork(colonyNumber, this), startX, startY, p, 1){
     m_wasBlockedFromMoving = false;
     
     m_compiler = getPointerToWorld()->getCompiler(colonyNumber);
+    
+    setIsDangerous();
     
 }
 
@@ -271,8 +277,279 @@ void Ant::mobileDoSomething() {
             
             switch (cmd.opcode) {
                     
-                case Compiler::moveForward:
-                    break;
+                case Compiler::moveForward: {
+                    
+                    int destX = 0, destY = 0;
+                    
+                    getDestinationCoordinate(destX, destY);
+                    
+                    if (getPointerToWorld()->attemptToMove(this, destX, destY)) {
+                        
+                        moveTo(destX, destY);
+                        m_wasBitten = false;
+                        m_wasBlockedFromMoving = false;
+                        m_instructionCount++;
+                        
+                    }
+                    
+                    else {
+                        
+                        m_wasBlockedFromMoving = true;
+                        m_instructionCount++;
+                    
+                    }
+                    
+                    return;
+                    
+                }
+                    
+                case Compiler::eatFood: {
+                    
+                    if (m_heldFood >= 100) {
+                        
+                        setHitpoints(100);
+                        m_heldFood -= 100;
+                        
+                    }
+                    
+                    else {
+                        
+                        setHitpoints(m_heldFood);
+                        m_heldFood = 0;
+                        
+                    }
+                    
+                    m_instructionCount++;
+                    
+                    return;
+                    
+                }
+                    
+                case Compiler::dropFood: {
+                    
+                    getPointerToWorld()->createFoodOn(getX(), getY(), m_heldFood);
+                    m_heldFood = 0;
+                    m_instructionCount++;
+                    
+                    return;
+                    
+                }
+                    
+                case Compiler::bite: {
+                    
+                    getPointerToWorld()->attemptToBite(this, getX(), getY(), 15);
+                    m_instructionCount++;
+                    
+                    return;
+                    
+                }
+                    
+                case Compiler::pickupFood: {
+                    
+                    if (m_heldFood < 1800) {
+                        
+                        if (m_heldFood <= 1400) {
+                        
+                            int foodPickedUp = getPointerToWorld()->attemptToEat(getX(), getY(), 400);
+                            
+                            if (foodPickedUp != -1)
+                                m_heldFood += foodPickedUp;
+                            
+                        }
+                        
+                        else {
+                            
+                            int foodPickedUp = getPointerToWorld()->attemptToEat(getX(), getY(), 1800 - m_heldFood);
+                                                
+                            if (foodPickedUp != -1)
+                                m_heldFood += foodPickedUp;
+                            
+                        }
+                    
+                    }
+                    
+                    m_instructionCount++;
+                    
+                    return;
+                        
+                }
+                    
+                case Compiler::emitPheromone: {
+                    
+                    getPointerToWorld()->createPheromoneOn(this);
+                    m_instructionCount++;
+                    
+                    return;
+                    
+                }
+                    
+                case Compiler::faceRandomDirection: {
+                    
+                    setDirection(generateRandomDirection());
+                    m_instructionCount++;
+                    
+                    return;
+                    
+                }
+                    
+                case Compiler::generateRandomNumber: {
+                    
+                    if (stoi(cmd.operand1) == 0)
+                        m_lastRandomNumberHeld = 0;
+                    
+                    else
+                        m_lastRandomNumberHeld = randInt(0, stoi(cmd.operand1) - 1);
+                    
+                    m_instructionCount++;
+                    
+                    continue;
+                    
+                }
+                    
+                case Compiler::goto_command: {
+                    
+                    m_instructionCount = stoi(cmd.operand1);
+                    continue;
+                    
+                }
+                    
+                case Compiler::if_command: {
+                    
+                    switch (stoi(cmd.operand1)) {
+                            
+                        case Compiler::last_random_number_was_zero: {
+                            
+                            if (m_lastRandomNumberHeld == 0)
+                                m_instructionCount = stoi(cmd.operand2);
+                            
+                            else
+                                m_instructionCount++;
+                            
+                            break;
+                            
+                        }
+                            
+                        case Compiler::i_am_carrying_food: {
+                            
+                            if (m_heldFood > 0)
+                                m_instructionCount = stoi(cmd.operand2);
+                            
+                            else
+                                m_instructionCount++;
+                            
+                            break;
+                            
+                        }
+                            
+                        case Compiler::i_am_hungry: {
+                            
+                            if (hitpoints() <= 25)
+                                m_instructionCount = stoi(cmd.operand2);
+                            
+                            else
+                                m_instructionCount++;
+                            
+                            break;
+                            
+                        }
+                            
+                        case Compiler::i_am_standing_with_an_enemy: {
+                            
+                            if (getPointerToWorld()->detectActorOn(this, getX(), getY(), EnemyTarget))
+                                m_instructionCount = stoi(cmd.operand2);
+                            
+                            else
+                                m_instructionCount++;
+                            
+                            break;
+                            
+                        }
+                            
+                        case Compiler::i_am_standing_on_food: {
+                            
+                            if (getPointerToWorld()->detectActorOn(this, getX(), getY(), FoodTarget))
+                                m_instructionCount = stoi(cmd.operand2);
+                            
+                            else
+                                m_instructionCount++;
+                            
+                            break;
+                            
+                        }
+                            
+                        case Compiler::i_am_standing_on_my_anthill: {
+                            
+                            if (getPointerToWorld()->detectActorOn(this, getX(), getY(), AnthillTarget))
+                                m_instructionCount = stoi(cmd.operand2);
+                            
+                            else
+                                m_instructionCount++;
+                            
+                            break;
+                            
+                        }
+                            
+                        case Compiler::i_smell_pheromone_in_front_of_me: {
+                            
+                            int destX = 0, destY = 0;
+                            
+                            getDestinationCoordinate(destX, destY);
+                            
+                            if (getPointerToWorld()->detectActorOn(this, destX, destY, PheromoneTarget))
+                                m_instructionCount = stoi(cmd.operand2);
+                            
+                            else
+                                m_instructionCount++;
+                            
+                            break;
+                            
+                        }
+                            
+                        case Compiler::i_smell_danger_in_front_of_me: {
+                            
+                            int destX = 0, destY = 0;
+                            
+                            getDestinationCoordinate(destX, destY);
+                            
+                            if (getPointerToWorld()->detectActorOn(this, destX, destY, DangerTarget))
+                                m_instructionCount = stoi(cmd.operand2);
+                            
+                            else
+                                m_instructionCount++;
+                            
+                            break;
+                            
+                        }
+                            
+                        case Compiler::i_was_bit: {
+                            
+                            if (m_wasBitten)
+                                m_instructionCount = stoi(cmd.operand2);
+                            
+                            else
+                                m_instructionCount++;
+                            
+                            break;
+                            
+                        }
+                            
+                        case Compiler::i_was_blocked_from_moving: {
+                            
+                            if (m_wasBlockedFromMoving)
+                                m_instructionCount = stoi(cmd.operand2);
+                            
+                            else
+                                m_instructionCount++;
+                            
+                            break;
+                            
+                        }
+                            
+                    }
+                    
+                    continue;
+                    
+                }
                     
             }
             
@@ -298,6 +575,7 @@ MobileHPActor(startingHP, imageID, startX, startY, p, 1) {
     
     m_stepsToMove = randInt(2, 10);
     m_didBiteOrJump = false;
+    setIsDangerous();
     
 }
 
