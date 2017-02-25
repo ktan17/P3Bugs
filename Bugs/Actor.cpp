@@ -392,6 +392,60 @@ void Ant::mobileDoSomething() {
                     
                 }
                     
+                case Compiler::rotateClockwise: {
+                    
+                    switch (getDirection()) {
+                            
+                        case up:
+                            setDirection(right);
+                            break;
+                        case right:
+                            setDirection(down);
+                            break;
+                        case down:
+                            setDirection(left);
+                            break;
+                        case left:
+                            setDirection(up);
+                            break;
+                        default:
+                            break;
+                            
+                    }
+                    
+                    m_instructionCount++;
+                    
+                    return;
+                    
+                }
+                    
+                case Compiler::rotateCounterClockwise: {
+                    
+                    switch (getDirection()) {
+                            
+                        case up:
+                            setDirection(left);
+                            break;
+                        case right:
+                            setDirection(up);
+                            break;
+                        case down:
+                            setDirection(right);
+                            break;
+                        case left:
+                            setDirection(down);
+                            break;
+                        default:
+                            break;
+                            
+                    }
+                    
+                    m_instructionCount++;
+                    
+                    return;
+                    
+                }
+                    
                 case Compiler::generateRandomNumber: {
                     
                     if (stoi(cmd.operand1) == 0)
